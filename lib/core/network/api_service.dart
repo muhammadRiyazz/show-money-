@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
   static const String baseUrl = 'https://tictechnologies.in/stage/showmoney/api';
 
   // ==========================================
-  // Comprehensive API Logging Helpers (Using developer.log only)
+  // Comprehensive API Logging Helpers
   // ==========================================
   static void _logRequest({
     required String method,
@@ -33,11 +34,9 @@ class ApiService {
     }
     buffer.writeln('========================================================================\n');
 
-    developer.log(
-      buffer.toString(),
-      name: 'ApiService.Request',
-      time: DateTime.now(),
-    );
+    final text = buffer.toString();
+    developer.log(text, name: 'ApiService.Request', time: DateTime.now());
+    debugPrint(text);
   }
 
   static void _logResponse({
@@ -65,11 +64,9 @@ class ApiService {
     }
     buffer.writeln('========================================================================\n');
 
-    developer.log(
-      buffer.toString(),
-      name: 'ApiService.Response',
-      time: DateTime.now(),
-    );
+    final text = buffer.toString();
+    developer.log(text, name: 'ApiService.Response', time: DateTime.now());
+    debugPrint(text);
   }
 
   static void _logError({
@@ -88,13 +85,126 @@ class ApiService {
     }
     buffer.writeln('========================================================================\n');
 
-    developer.log(
-      buffer.toString(),
-      name: 'ApiService.Error',
-      error: error,
-      stackTrace: stackTrace,
-      time: DateTime.now(),
-    );
+    final text = buffer.toString();
+    developer.log(text, name: 'ApiService.Error', error: error, stackTrace: stackTrace, time: DateTime.now());
+    debugPrint(text);
+  }
+
+  // ==========================================
+  // Dedicated Logging for Fetch Sheets & Fetch Leads
+  // ==========================================
+  static void _logFetchSheetsRequest({
+    required int userId,
+    int? groupId,
+    String? role,
+    required bool isManager,
+  }) {
+    final buffer = StringBuffer();
+    buffer.writeln('\n📊 ===================== [FETCH SHEETS REQUEST] =====================');
+    buffer.writeln('👤 User ID   : $userId');
+    buffer.writeln('👥 Group ID  : ${groupId ?? 'Not specified'}');
+    buffer.writeln('🏷️ User Role : ${role ?? (isManager ? 'Manager' : 'Staff')}');
+    buffer.writeln('📡 Target    : ${isManager ? 'POST api/get_all_sheets' : 'GET api/get_sheets?user_id=$userId${groupId != null ? '&group_id=$groupId' : ''}'}');
+    buffer.writeln('🕒 Timestamp : ${DateTime.now().toIso8601String()}');
+    buffer.writeln('====================================================================\n');
+
+    final text = buffer.toString();
+    developer.log(text, name: 'ApiService.FetchSheets');
+    debugPrint(text);
+  }
+
+  static void _logFetchSheetsResponse({
+    required bool success,
+    required dynamic rawData,
+    String? message,
+  }) {
+    final buffer = StringBuffer();
+    final count = rawData is List ? rawData.length : (rawData is Map && rawData['sheets'] is List ? (rawData['sheets'] as List).length : 0);
+    final icon = success ? '✅' : '❌';
+
+    buffer.writeln('\n📊 ===================== [FETCH SHEETS RESPONSE] ====================');
+    buffer.writeln('$icon STATUS       : ${success ? 'SUCCESS' : 'FAILED'}');
+    buffer.writeln('🔢 TOTAL SHEETS   : $count');
+    if (message != null) {
+      buffer.writeln('💬 MESSAGE        : $message');
+    }
+    if (rawData is List && rawData.isNotEmpty) {
+      buffer.writeln('📑 SHEETS LIST    :');
+      for (int i = 0; i < rawData.length; i++) {
+        final s = rawData[i];
+        if (s is Map) {
+          final id = s['id'] ?? s['sheet_id'] ?? 'N/A';
+          final title = s['title'] ?? s['name'] ?? 'Untitled';
+          final rows = s['total_rows'] ?? s['total_leads'] ?? '0';
+          buffer.writeln('   #${i + 1} | ID: $id | "$title" | Leads: $rows');
+        }
+      }
+    }
+    buffer.writeln('====================================================================\n');
+
+    final text = buffer.toString();
+    developer.log(text, name: 'ApiService.FetchSheets');
+    debugPrint(text);
+  }
+
+  static void _logFetchLeadsRequest({
+    required int sheetId,
+    required int userId,
+    String? role,
+    required String endpoint,
+  }) {
+    final buffer = StringBuffer();
+    buffer.writeln('\n🎯 ====================== [FETCH LEADS REQUEST] =====================');
+    buffer.writeln('📑 Sheet ID   : $sheetId');
+    buffer.writeln('👤 User ID    : $userId');
+    buffer.writeln('🏷️ Role       : ${role ?? 'Not specified'}');
+    buffer.writeln('📡 Endpoint   : $endpoint');
+    buffer.writeln('🕒 Timestamp  : ${DateTime.now().toIso8601String()}');
+    buffer.writeln('====================================================================\n');
+
+    final text = buffer.toString();
+    developer.log(text, name: 'ApiService.FetchLeads');
+    debugPrint(text);
+  }
+
+  static void _logFetchLeadsResponse({
+    required bool success,
+    required int sheetId,
+    Map<String, dynamic>? sheetData,
+    String? message,
+  }) {
+    final buffer = StringBuffer();
+    final icon = success ? '✅' : '❌';
+    final title = sheetData?['title'] ?? 'Sheet #$sheetId';
+    final rows = sheetData?['rows'] is List ? (sheetData!['rows'] as List) : <dynamic>[];
+    final columns = sheetData?['columns'] is List ? (sheetData!['columns'] as List) : <dynamic>[];
+
+    buffer.writeln('\n🎯 ===================== [FETCH LEADS RESPONSE] =====================');
+    buffer.writeln('$icon STATUS       : ${success ? 'SUCCESS' : 'FAILED'}');
+    buffer.writeln('📑 SHEET ID       : $sheetId ("$title")');
+    buffer.writeln('👥 TOTAL LEADS    : ${rows.length}');
+    buffer.writeln('📊 COLUMNS        : ${columns.length}');
+    if (message != null) {
+      buffer.writeln('💬 MESSAGE        : $message');
+    }
+
+    if (rows.isNotEmpty) {
+      buffer.writeln('📋 SAMPLE LEADS PREVIEW (First ${rows.length > 5 ? 5 : rows.length}):');
+      for (int i = 0; i < (rows.length > 5 ? 5 : rows.length); i++) {
+        final r = rows[i];
+        if (r is Map) {
+          final rowId = r['id'] ?? r['row_id'] ?? 'N/A';
+          final status = r['status'] ?? 'new';
+          final leadName = r['lead_name'] ?? r['name'] ?? r['data']?['Student Name'] ?? r['data']?['Name'] ?? 'Lead #$rowId';
+          buffer.writeln('   #${i + 1} | Row ID: $rowId | Lead: $leadName | Status: $status');
+        }
+      }
+    }
+    buffer.writeln('====================================================================\n');
+
+    final text = buffer.toString();
+    developer.log(text, name: 'ApiService.FetchLeads');
+    debugPrint(text);
   }
 
   static Future<Map<String, dynamic>> _post(String endpoint, Map<String, dynamic> body) async {
@@ -402,27 +512,50 @@ class ApiService {
   /// Accounts: GET api/get_sheets?user_id={id}&group_id=2 (Automatic all sheets)
   /// Field Exec / Staff: GET api/get_sheets?user_id={id}&group_id={groupId}
   static Future<Map<String, dynamic>> getSheets(int userId, [int? groupId, String? role]) async {
-    developer.log(
-      'API [Sheets] Get Sheets: user_id=$userId, group_id=$groupId, role=$role',
-      name: 'ApiService.Sheets',
-    );
     final isManager = (groupId != null && (groupId == 6 || groupId == 1)) ||
         (role != null && (role.toLowerCase().contains('manager') || role.toLowerCase().contains('admin')));
 
+    _logFetchSheetsRequest(
+      userId: userId,
+      groupId: groupId,
+      role: role,
+      isManager: isManager,
+    );
+
+    Map<String, dynamic> res;
     if (isManager) {
       try {
-        final res = await getAllSheets(userId: userId);
-        if (res['status'] == true && res['data'] != null) {
-          return res;
+        final allRes = await getAllSheets(userId: userId);
+        if (allRes['status'] == true && allRes['data'] != null) {
+          res = allRes;
+        } else {
+          res = await getStaffSheets(userId, groupId);
         }
       } catch (e) {
         developer.log('API [Sheets] get_all_sheets fallback to get_sheets: $e', name: 'ApiService.Sheets');
+        res = await getStaffSheets(userId, groupId);
       }
+    } else {
+      res = await getStaffSheets(userId, groupId);
     }
-    return await getStaffSheets(userId, groupId);
+
+    _logFetchSheetsResponse(
+      success: res['status'] == true,
+      rawData: res['data'],
+      message: res['message']?.toString(),
+    );
+
+    return res;
   }
 
-  /// 1.2 & 3.3 & 5.2 To see sheets separately (Role-Filtered, for all users)
+  /// Alias for getSheets
+  static Future<Map<String, dynamic>> fetchSheets({
+    required int userId,
+    int? groupId,
+    String? role,
+  }) => getSheets(userId, groupId, role);
+
+  /// 1.2 & 3.3 & 5.2 To see sheets separately & fetch leads (Role-Filtered, for all users)
   /// Endpoint: POST api/sheet_details
   /// Request Body: sheet_id, user_id, role (Accounts / Feild Executive / BackEnd Staff / Manager)
   static Future<Map<String, dynamic>> getSheetDetails({
@@ -430,10 +563,14 @@ class ApiService {
     required int userId,
     String? role,
   }) async {
-    developer.log(
-      'API [Sheets] POST sheet_details: sheet_id=$sheetId, user_id=$userId, role=$role',
-      name: 'ApiService.Sheets',
+    final endpoint = 'api/sheet_details?sheet_id=$sheetId${userId > 0 ? '&user_id=$userId' : ''}${role != null && role.isNotEmpty ? '&role=$role' : ''}';
+    _logFetchLeadsRequest(
+      sheetId: sheetId,
+      userId: userId,
+      role: role,
+      endpoint: endpoint,
     );
+
     final body = <String, dynamic>{
       'sheet_id': sheetId,
       'user_id': userId,
@@ -442,32 +579,64 @@ class ApiService {
       body['role'] = role;
     }
 
+    Map<String, dynamic>? result;
+
     // Primary: GET api/sheet_details?sheet_id={sheet_id} (Required by backend)
     try {
       final getRes = await _get('sheet_details?sheet_id=$sheetId${userId > 0 ? '&user_id=$userId' : ''}${role != null && role.isNotEmpty ? '&role=$role' : ''}');
       if (getRes['status'] == true) {
-        return getRes;
+        result = getRes;
       }
     } catch (_) {}
 
     // Fallback: POST Form
-    try {
-      final res = await _postForm('sheet_details', body);
-      if (res['status'] == true) {
-        return res;
-      }
-    } catch (_) {}
+    if (result == null) {
+      try {
+        final res = await _postForm('sheet_details', body);
+        if (res['status'] == true) {
+          result = res;
+        }
+      } catch (_) {}
+    }
 
     // Fallback: POST JSON
-    try {
-      final jsonRes = await _post('sheet_details', body);
-      if (jsonRes['status'] == true) {
-        return jsonRes;
-      }
-    } catch (_) {}
+    if (result == null) {
+      try {
+        final jsonRes = await _post('sheet_details', body);
+        if (jsonRes['status'] == true) {
+          result = jsonRes;
+        }
+      } catch (_) {}
+    }
 
-    return {'status': false, 'message': 'Failed to load sheet details.'};
+    result ??= {'status': false, 'message': 'Failed to load sheet details.'};
+
+    final isSuccess = result['status'] == true;
+    final sheetData = result['data'] is Map ? Map<String, dynamic>.from(result['data']) : null;
+
+    _logFetchLeadsResponse(
+      success: isSuccess,
+      sheetId: sheetId,
+      sheetData: sheetData,
+      message: result['message']?.toString(),
+    );
+
+    return result;
   }
+
+  /// Alias for getSheetDetails to fetch leads
+  static Future<Map<String, dynamic>> fetchLeads({
+    required int sheetId,
+    required int userId,
+    String? role,
+  }) => getSheetDetails(sheetId: sheetId, userId: userId, role: role);
+
+  /// Alias for getSheetDetails to get leads
+  static Future<Map<String, dynamic>> getLeads({
+    required int sheetId,
+    required int userId,
+    String? role,
+  }) => getSheetDetails(sheetId: sheetId, userId: userId, role: role);
 
   /// 1.3 Add Row / Lead to Sheet (Manager)
   /// Endpoint: POST api/add_row
