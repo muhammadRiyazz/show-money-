@@ -689,33 +689,7 @@ class _MainWrapperState extends State<MainWrapper> {
           );
         }
 
-        // Non-Manager: Inactive notification if data is hidden
-        if (isInactive) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFFDE68A)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.visibility_off_rounded, size: 14, color: Color(0xFFD97706)),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Inactive Mode: Data is currently hidden by Administrator.',
-                      style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Color(0xFF92400E)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
+        // Non-managers should never see any inactive/deactivated notice
         return const SizedBox.shrink();
       },
     );

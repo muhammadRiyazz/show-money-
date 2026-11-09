@@ -535,7 +535,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
             onPressed: () => context.pop(),
           ),
-          title: const Text('Access Restricted', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+          title: const Text('Lead Details', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
         ),
         body: Center(
           child: Container(
@@ -552,20 +552,20 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 Container(
                   width: 64,
                   height: 64,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFEF3C7),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.visibility_off_rounded, size: 32, color: Color(0xFFD97706)),
+                  child: const Icon(Icons.person_outline_rounded, size: 32, color: AppColors.primary),
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Lead Details Restricted',
+                  'Record Not Found',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Inactive Mode has been enabled by the Administrator. Lead information is currently hidden for your role.',
+                  'The requested lead details could not be found or are no longer available.',
                   style: TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
                   textAlign: TextAlign.center,
                 ),

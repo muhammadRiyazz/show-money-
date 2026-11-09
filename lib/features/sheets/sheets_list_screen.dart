@@ -222,10 +222,9 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
             _buildDashboardOverview(isDesktop),
             const SizedBox(height: 16),
 
-            // Search Input Bar (Hidden if data is hidden)
-            if (!hideData)
-              Container(
-                margin: const EdgeInsets.only(bottom: 16),
+            // Search Input Bar
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(14),
@@ -417,7 +416,7 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
       _buildKpiCard(
         title: 'Total Sheets',
         value: totalSheets,
-        subtitle: hideData ? 'Data hidden' : 'Active workspaces',
+        subtitle: 'Active workspaces',
         icon: Icons.table_chart_rounded,
         color: const Color(0xFF3B82F6),
         badge: 'Sheets',
@@ -425,7 +424,7 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
       _buildKpiCard(
         title: 'Total Leads',
         value: totalLeads,
-        subtitle: hideData ? 'Data hidden' : 'All candidate records',
+        subtitle: 'All candidate records',
         icon: Icons.people_alt_rounded,
         color: const Color(0xFF8B5CF6),
         badge: 'Pool',
@@ -433,7 +432,7 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
       _buildKpiCard(
         title: 'New Inflow',
         value: newCount,
-        subtitle: hideData ? 'Data hidden' : 'Awaiting action',
+        subtitle: 'Awaiting action',
         icon: Icons.trending_up_rounded,
         color: const Color(0xFFF59E0B),
         badge: 'New',
@@ -441,7 +440,7 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
       _buildKpiCard(
         title: 'Paid / Won',
         value: paidCount,
-        subtitle: hideData ? 'Data hidden' : 'Converted leads',
+        subtitle: 'Converted leads',
         icon: Icons.check_circle_rounded,
         color: const Color(0xFF10B981),
         badge: 'Won',
@@ -449,7 +448,7 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
       _buildKpiCard(
         title: 'Active Staff',
         value: staffCount,
-        subtitle: hideData ? 'Data hidden' : 'Team executives',
+        subtitle: 'Team executives',
         icon: Icons.badge_rounded,
         color: const Color(0xFF6366F1),
         badge: 'Staff',
@@ -1086,74 +1085,38 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
 
   Widget _buildInactiveModeDataHiddenState() {
     return Center(
-      child: Container(
-        padding: const EdgeInsets.all(28),
-        constraints: const BoxConstraints(maxWidth: 480),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: const BoxDecoration(
-                color: Color(0xFFFEF3C7),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.visibility_off_rounded, size: 36, color: Color(0xFFD97706)),
+            child: const Icon(
+              Icons.table_chart_outlined,
+              size: 36,
+              color: AppColors.primary,
             ),
-            const SizedBox(height: 18),
-            const Text(
-              'Data Access Restricted',
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'No sheets assigned yet',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Inactive Mode has been enabled by the Administrator.\n\nAll workspace spreadsheets, candidate records, and dashboard metrics are currently hidden for your role.',
-              style: TextStyle(
-                fontSize: 13.5,
-                color: Color(0xFF64748B),
-                height: 1.45,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.lock_clock_rounded, size: 16, color: Color(0xFF64748B)),
-                  SizedBox(width: 8),
-                  Text(
-                    'System Mode: Inactive (Data Hidden)',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Assigned sheets will appear here once shared by the manager.',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

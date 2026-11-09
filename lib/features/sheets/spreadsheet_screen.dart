@@ -2713,20 +2713,20 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       Container(
                         width: 64,
                         height: 64,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFEF3C7),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.08),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.visibility_off_rounded, size: 32, color: Color(0xFFD97706)),
+                        child: const Icon(Icons.table_chart_outlined, size: 32, color: AppColors.primary),
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Spreadsheet Access Restricted',
+                        'No Data Found',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Inactive Mode has been enabled by the Administrator. All spreadsheet records and lead details are currently hidden for your role.',
+                        'There are no records found for this sheet at the moment.',
                         style: TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
                         textAlign: TextAlign.center,
                       ),

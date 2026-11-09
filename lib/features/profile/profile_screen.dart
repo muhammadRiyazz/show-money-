@@ -507,40 +507,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
 
-        // Non-Manager: Show read-only status banner if inactive
-        if (isInactive) {
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEF3C7),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFFDE68A)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.visibility_off_rounded, color: Color(0xFFD97706), size: 22),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Inactive Mode Enabled',
-                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF92400E)),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Workspace spreadsheets, candidate leads, and dashboard metrics are currently hidden by the Administrator.',
-                        style: TextStyle(fontSize: 12, color: Color(0xFFB45309)),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
+        // Non-managers should never see any inactive/deactivated notice
         return const SizedBox.shrink();
       },
     );
