@@ -2217,10 +2217,284 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   }
 
   // =========================================================================
+  // ADVANCE PAYMENT DIALOG (Option to choose Not Collected vs Collected + Enter Amount)
+  // =========================================================================
+  Future<void> _showAdvancePaymentDialog({
+    required String currentValue,
+    required ValueChanged<String> onConfirmed,
+  }) async {
+    final cleanVal = currentValue.trim();
+    final bool initialIsCollected = cleanVal.isNotEmpty &&
+        !cleanVal.toLowerCase().contains('not') &&
+        cleanVal != '0';
+
+    bool isCollected = initialIsCollected;
+    final existingNumber = cleanVal.replaceAll(RegExp(r'[^\d]'), '');
+    final amountController = TextEditingController(text: existingNumber.isNotEmpty ? existingNumber : '');
+
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (dCtx, setDState) {
+            final quickAmounts = ['1000', '2000', '3000', '4000', '5000', '6000', '7000', '8000', '10000'];
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              titlePadding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              actionsPadding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF1D4ED8), size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Advance Payment',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: 360,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Choose payment status:',
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Segmented selection: Not Collected vs Collected
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              setDState(() {
+                                isCollected = false;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(10),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.symmetric(vertical: 11),
+                              decoration: BoxDecoration(
+                                color: !isCollected ? const Color(0xFFFEE2E2) : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: !isCollected ? const Color(0xFFEF4444) : const Color(0xFFE2E8F0),
+                                  width: !isCollected ? 1.5 : 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.cancel_outlined,
+                                    size: 16,
+                                    color: !isCollected ? const Color(0xFFDC2626) : const Color(0xFF64748B),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Not Collected',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: !isCollected ? FontWeight.w800 : FontWeight.w600,
+                                      color: !isCollected ? const Color(0xFFDC2626) : const Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              setDState(() {
+                                isCollected = true;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(10),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.symmetric(vertical: 11),
+                              decoration: BoxDecoration(
+                                color: isCollected ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: isCollected ? const Color(0xFF22C55E) : const Color(0xFFE2E8F0),
+                                  width: isCollected ? 1.5 : 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.check_circle_outline_rounded,
+                                    size: 16,
+                                    color: isCollected ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Collected',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: isCollected ? FontWeight.w800 : FontWeight.w600,
+                                      color: isCollected ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    if (isCollected) ...[
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Enter Collected Advance Amount:',
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: amountController,
+                        keyboardType: TextInputType.number,
+                        autofocus: true,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                        decoration: InputDecoration(
+                          prefixIcon: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                            child: Text('₹', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
+                          ),
+                          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                          hintText: 'e.g. 2000, 3000, 5000',
+                          hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8), fontWeight: FontWeight.normal),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF16A34A), width: 1.8)),
+                        ),
+                        onChanged: (_) => setDState(() {}),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Quick select amount:',
+                        style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: quickAmounts.map((amt) {
+                          final isCurrent = amountController.text.trim() == amt;
+                          return InkWell(
+                            onTap: () {
+                              setDState(() {
+                                amountController.text = amt;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: isCurrent ? const Color(0xFFDCFCE7) : const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: isCurrent ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0),
+                                ),
+                              ),
+                              child: Text(
+                                '₹$amt',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                                  color: isCurrent ? const Color(0xFF16A34A) : const Color(0xFF334155),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    String finalVal;
+                    if (!isCollected) {
+                      finalVal = 'Not Collected';
+                    } else {
+                      final entered = amountController.text.trim();
+                      finalVal = entered.isNotEmpty ? entered : 'Collected';
+                    }
+                    Navigator.pop(ctx);
+                    onConfirmed(finalVal);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isCollected ? const Color(0xFF16A34A) : const Color(0xFF475569),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  ),
+                  child: Text(
+                    !isCollected
+                        ? 'Set as Not Collected'
+                        : (amountController.text.trim().isNotEmpty
+                            ? 'Set Advance: ₹${amountController.text.trim()}'
+                            : 'Confirm Collected'),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   // SINGLE CELL BOX UPDATE (Inline Editing - Task 3.2)
   // Endpoint: POST api/update_cell
   // =========================================================================
   Future<void> _showQuickEditCellDialog(ApiRow row, ApiColumn col) async {
+    if (_isAdvanceColumn(col)) {
+      final currentVal = row.getValue(col);
+      await _showAdvancePaymentDialog(
+        currentValue: currentVal,
+        onConfirmed: (newVal) async {
+          setState(() {
+            row.setValue(col, newVal);
+          });
+          try {
+            await ApiService.updateCell(
+              rowId: row.id,
+              columnKey: col.columnKey,
+              value: newVal,
+              userId: _currentUserId,
+            );
+          } catch (_) {}
+        },
+      );
+      return;
+    }
+
     final currentVal = row.getValue(col);
     final controller = TextEditingController(text: currentVal);
     bool isSaving = false;
@@ -3599,7 +3873,16 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   // Clean spreadsheet cells: TextField or Dropdown Selector directly in the box
   // =========================================================================
 
+  bool _isAdvanceColumn(ApiColumn col) {
+    final colLower = col.columnName.trim().toLowerCase();
+    final keyLower = col.columnKey.trim().toLowerCase();
+    return colLower.contains('advance') || keyLower.contains('advance');
+  }
+
   bool _isDropdownColumn(ApiColumn col) {
+    if (_isAdvanceColumn(col)) {
+      return false; // Advance allows free typing + smart Collected/Not Collected picker
+    }
     final colLower = col.columnName.trim().toLowerCase();
     final keyLower = col.columnKey.trim().toLowerCase();
     if (colLower == 'status' || keyLower == 'status' || colLower.contains('status') || keyLower.contains('status')) {
@@ -4712,6 +4995,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
             final keyLower = col.columnKey.trim().toLowerCase();
             final isStatusCol = colLower == 'status' || colLower.contains('status') || keyLower.contains('status');
             final isDropdown = _isDropdownColumn(col);
+            final isAdvance = _isAdvanceColumn(col);
             final isNumber = col.columnType == 'number' ||
                 colLower.contains('amount') ||
                 colLower.contains('charge') ||
@@ -4766,7 +5050,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 child: TextField(
                   controller: ctrl,
                   focusNode: _editRowFocusNodes[col.columnKey] ?? _editRowFocusNodes[col.columnName],
-                  keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+                  keyboardType: (isNumber || isAdvance) ? TextInputType.number : TextInputType.text,
                   style: const TextStyle(fontSize: 12, color: Color(0xFF0F172A), fontWeight: FontWeight.w400),
                   cursorColor: const Color(0xFF1A73E8),
                   textInputAction: isLastEditable ? TextInputAction.done : TextInputAction.next,
@@ -4782,12 +5066,36 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       editingRow: rowData,
                     );
                   },
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
+                    hintText: isAdvance ? 'Enter or choose advance' : '',
+                    hintStyle: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                    suffixIcon: isAdvance
+                        ? InkWell(
+                            onTap: () {
+                              _showAdvancePaymentDialog(
+                                currentValue: ctrl?.text ?? '',
+                                onConfirmed: (newVal) {
+                                  setState(() {
+                                    if (ctrl != null) ctrl.text = newVal;
+                                    if (_editRowControllers.containsKey(col.columnKey)) _editRowControllers[col.columnKey]!.text = newVal;
+                                    if (_editRowControllers.containsKey(col.columnName)) _editRowControllers[col.columnName]!.text = newVal;
+                                  });
+                                  _commitAutoSave(rowData, col, newVal, showToast: false);
+                                },
+                              );
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 4),
+                              child: Icon(Icons.arrow_drop_down_circle_outlined, size: 16, color: Color(0xFF64748B)),
+                            ),
+                          )
+                        : null,
+                    suffixIconConstraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                   ),
                 ),
               );
@@ -4831,7 +5139,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 child: TextField(
                   controller: ctrl,
                   focusNode: _newRowFocusNodes[col.columnKey] ?? _newRowFocusNodes[col.columnName],
-                  keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+                  keyboardType: (isNumber || isAdvance) ? TextInputType.number : TextInputType.text,
                   style: const TextStyle(fontSize: 12, color: Color(0xFF0F172A), fontWeight: FontWeight.w400),
                   cursorColor: const Color(0xFF1A73E8),
                   textInputAction: isLastEditable ? TextInputAction.done : TextInputAction.next,
@@ -4852,8 +5160,30 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
-                    hintText: isStatusCol ? 'new' : '',
+                    hintText: isStatusCol ? 'new' : (isAdvance ? 'Enter or choose' : ''),
                     hintStyle: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                    suffixIcon: isAdvance
+                        ? InkWell(
+                            onTap: () {
+                              _showAdvancePaymentDialog(
+                                currentValue: ctrl?.text ?? '',
+                                onConfirmed: (newVal) {
+                                  setState(() {
+                                    if (ctrl != null) ctrl.text = newVal;
+                                    if (_newRowControllers.containsKey(col.columnKey)) _newRowControllers[col.columnKey]!.text = newVal;
+                                    if (_newRowControllers.containsKey(col.columnName)) _newRowControllers[col.columnName]!.text = newVal;
+                                  });
+                                  _triggerAutoSaveNewLead();
+                                },
+                              );
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 4),
+                              child: Icon(Icons.arrow_drop_down_circle_outlined, size: 16, color: Color(0xFF64748B)),
+                            ),
+                          )
+                        : null,
+                    suffixIconConstraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                   ),
                 ),
               );
@@ -4874,6 +5204,81 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   onSelected: (selectedVal) {
                     _quickUpdateRowDropdown(rowData, col, selectedVal);
                   },
+                );
+              }
+
+              if (isAdvance) {
+                final val = rowData!.getValue(col).trim();
+                final isNotCollected = val.toLowerCase().contains('not') || val == '0' || val.isEmpty;
+                return Container(
+                  width: width,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      right: BorderSide(color: Color(0xFFCBD5E1), width: 1),
+                      bottom: BorderSide(color: Color(0xFFCBD5E1), width: 1),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            _startInlineRowEdit(rowData, focusColumn: col.columnKey);
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Row(
+                              children: [
+                                if (!isNotCollected && val.isNotEmpty) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDCFCE7),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                                    ),
+                                    child: Text(
+                                      val.startsWith('₹') ? val : '₹$val',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF15803D),
+                                      ),
+                                    ),
+                                  ),
+                                ] else ...[
+                                  Text(
+                                    val.isEmpty ? '—' : val,
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      color: val.toLowerCase().contains('not') ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                      fontStyle: isNotCollected ? FontStyle.italic : FontStyle.normal,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () {
+                          _showAdvancePaymentDialog(
+                            currentValue: val,
+                            onConfirmed: (newVal) {
+                              _quickUpdateRowDropdown(rowData, col, newVal);
+                            },
+                          );
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                          child: Icon(Icons.arrow_drop_down_circle_outlined, size: 16, color: Color(0xFF94A3B8)),
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               }
 

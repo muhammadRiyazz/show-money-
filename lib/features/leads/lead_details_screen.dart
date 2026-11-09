@@ -1413,9 +1413,139 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 col.columnName.toLowerCase() == 'country';
             final canEdit = _isManager || !isBasicLeadCol;
 
+            final isAdvance = col.columnName.toLowerCase().contains('advance') ||
+                col.columnKey.toLowerCase().contains('advance');
+
+            if (isAdvance) {
+              return SizedBox(
+                width: itemWidth,
+                child: StatefulBuilder(
+                  builder: (context, setFieldState) {
+                    final textVal = ctrl.text.trim();
+                    final isNotCollected = textVal.toLowerCase().contains('not') || textVal == '0';
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextFormField(
+                          controller: ctrl,
+                          readOnly: !canEdit,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: canEdit ? col.columnName : '${col.columnName} (Manager Only)',
+                            hintText: 'Enter amount or choose option',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            filled: true,
+                            fillColor: canEdit ? Colors.white : const Color(0xFFF1F5F9),
+                            prefixIcon: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                              child: Text('₹', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF16A34A))),
+                            ),
+                            prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                            suffixIcon: canEdit
+                                ? PopupMenuButton<String>(
+                                    tooltip: 'Choose Advance Option',
+                                    icon: const Icon(Icons.tune_rounded, size: 18, color: Color(0xFF64748B)),
+                                    onSelected: (val) {
+                                      setFieldState(() {
+                                        ctrl.text = val;
+                                      });
+                                    },
+                                    itemBuilder: (ctx) => [
+                                      const PopupMenuItem(
+                                        value: 'Not Collected',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.cancel_outlined, color: Colors.red, size: 16),
+                                            SizedBox(width: 8),
+                                            Text('Not Collected', style: TextStyle(fontWeight: FontWeight.w600)),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuDivider(),
+                                      ...['1000', '2000', '3000', '4000', '5000', '10000'].map(
+                                        (amt) => PopupMenuItem(
+                                          value: amt,
+                                          child: Text('Collected: ₹$amt'),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : null,
+                          ),
+                          onChanged: (_) => setFieldState(() {}),
+                        ),
+                        if (canEdit) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              InkWell(
+                                onTap: () {
+                                  setFieldState(() {
+                                    ctrl.text = 'Not Collected';
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: isNotCollected ? const Color(0xFFFEE2E2) : const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: isNotCollected ? const Color(0xFFEF4444) : const Color(0xFFE2E8F0)),
+                                  ),
+                                  child: Text(
+                                    'Not Collected',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: isNotCollected ? FontWeight.bold : FontWeight.normal,
+                                      color: isNotCollected ? const Color(0xFFDC2626) : const Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              ...['2000', '3000', '5000'].map((amt) {
+                                final isSel = textVal == amt;
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 6),
+                                  child: InkWell(
+                                    onTap: () {
+                                      setFieldState(() {
+                                        ctrl.text = amt;
+                                      });
+                                    },
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: isSel ? const Color(0xFFDCFCE7) : const Color(0xFFF8FAFC),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: isSel ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0)),
+                                      ),
+                                      child: Text(
+                                        '₹$amt',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                                          color: isSel ? const Color(0xFF16A34A) : const Color(0xFF334155),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              );
+            }
+
             return SizedBox(
               width: itemWidth,
-              child: col.options != null && col.options!.isNotEmpty
+              child: (!isAdvance && col.options.isNotEmpty)
                   ? DropdownButtonFormField<String>(
                       initialValue: col.options!.contains(ctrl.text)
                           ? ctrl.text
