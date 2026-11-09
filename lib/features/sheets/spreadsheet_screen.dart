@@ -51,26 +51,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   Timer? _autoSaveTimer;
   Timer? _autoSaveNewLeadTimer;
   final ValueNotifier<bool> _isAutoSavingNotifier = ValueNotifier<bool>(false);
-  final ValueNotifier<String> _autoSaveStatusNotifier = ValueNotifier<String>('Auto-save on');
+  final ValueNotifier<String> _autoSaveStatusNotifier = ValueNotifier<String>('Auto-saved');
 
-  // Auto-Save Toggle & Manual Save State (Requirement)
-  bool _isAutoSaveEnabled = true;
-  bool _hasUnsavedChanges = false;
+  // Auto-Save State (Always Enabled)
   final Map<int, Map<String, dynamic>> _pendingCellEdits = {};
-
-  bool get _hasUnsavedData {
-    if (_hasUnsavedChanges) return true;
-    if (_pendingCellEdits.isNotEmpty) return true;
-    if (_isAddingInlineRow) {
-      return _newRowControllers.values.any((c) => c.text.trim().isNotEmpty);
-    }
-    if (_editingRowId != null) {
-      return true;
-    }
-    return false;
-  }
-
-  bool get _shouldBlockBackNavigation => !_isAutoSaveEnabled && _hasUnsavedData;
 
   int get _sheetTotalCount {
     if (_sheet == null) return 0;
@@ -214,6 +198,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   }
 
   Future<void> _fetchSheetData({bool showLoading = true}) async {
+    // Never interrupt the user with background refresh while typing or editing
+    if (!showLoading && (_isAddingInlineRow || _editingRowId != null)) {
+      return;
+    }
+
     if (showLoading && _sheet == null) {
       setState(() {
         _isLoading = true;
@@ -405,17 +394,28 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       if (!mounted) return;
 
       if (response['status'] == true) {
+        final newRowId = _newlyCreatedRowId ??
+            int.tryParse(response['row_id']?.toString() ?? '') ??
+            int.tryParse(response['data']?['id']?.toString() ?? '') ??
+            int.tryParse(response['data']?['row_id']?.toString() ?? '') ??
+            int.tryParse(response['id']?.toString() ?? '') ??
+            (_sheet != null && _sheet!.rows.isNotEmpty ? _sheet!.rows.first.id + 1 : 1);
         _newlyCreatedRowId = null;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Lead saved successfully to spreadsheet!'),
-            backgroundColor: AppColors.success,
-            duration: Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+
+        if (_sheet != null && !_sheet!.rows.any((r) => r.id == newRowId)) {
+          final newRow = ApiRow(
+            id: newRowId,
+            sheetId: sheetId,
+            rowIndex: 1,
+            status: statusVal,
+            createdBy: _currentUserId,
+            data: Map<String, dynamic>.from(rowData),
+          );
+          _sheet!.rows.insert(0, newRow);
+        }
+
+        _autoSaveStatusNotifier.value = 'New lead added';
         _cancelInlineAddLead();
-        _fetchSheetData(showLoading: false);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -538,17 +538,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       if (response['status'] == true) {
         row.data.addAll(updatedData);
         row.status = statusVal;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Lead updated successfully in spreadsheet!'),
-            backgroundColor: AppColors.success,
-            duration: Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _autoSaveStatusNotifier.value = 'Row auto-saved';
         _cancelInlineRowEdit();
-        _fetchSheetData(showLoading: false);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -576,18 +567,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   // =========================================================================
   void _triggerAutoSave(ApiRow row, ApiColumn col, String newValue) {
     row.setValue(col, newValue);
-    if (!_isAutoSaveEnabled) {
-      _pendingCellEdits.putIfAbsent(row.id, () => {})[col.columnKey] = newValue;
-      _pendingCellEdits[row.id]![col.columnName] = newValue;
-      _hasUnsavedChanges = true;
-      _autoSaveStatusNotifier.value = 'Unsaved changes';
-      return;
-    }
     _autoSaveTimer?.cancel();
     _isAutoSavingNotifier.value = true;
     _autoSaveStatusNotifier.value = 'Auto-saving...';
 
-    _autoSaveTimer = Timer(const Duration(milliseconds: 700), () async {
+    _autoSaveTimer = Timer(const Duration(milliseconds: 600), () async {
       await _commitAutoSave(row, col, newValue, showToast: false);
     });
   }
@@ -606,14 +590,6 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       row.status = statusVal;
       row.data['status'] = statusVal;
       row.data['Status'] = _formatStatusLabel(newValue);
-    }
-
-    if (!_isAutoSaveEnabled) {
-      _pendingCellEdits.putIfAbsent(row.id, () => {})[col.columnKey] = newValue;
-      _pendingCellEdits[row.id]![col.columnName] = newValue;
-      _hasUnsavedChanges = true;
-      _autoSaveStatusNotifier.value = 'Unsaved changes';
-      return;
     }
 
     _isAutoSavingNotifier.value = true;
@@ -656,35 +632,13 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
     if (mounted) {
       _isAutoSavingNotifier.value = false;
-      _autoSaveStatusNotifier.value = '${col.columnName} saved';
+      _autoSaveStatusNotifier.value = 'Auto-saved';
       if (_pendingCellEdits[row.id] != null) {
         _pendingCellEdits[row.id]!.remove(col.columnKey);
         _pendingCellEdits[row.id]!.remove(col.columnName);
         if (_pendingCellEdits[row.id]!.isEmpty) {
           _pendingCellEdits.remove(row.id);
         }
-      }
-      if (_pendingCellEdits.isEmpty && !_isAddingInlineRow && _editingRowId == null) {
-        _hasUnsavedChanges = false;
-      }
-
-      if (showToast) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
-                const SizedBox(width: 8),
-                Text('${col.columnName} auto-saved', style: const TextStyle(fontSize: 12)),
-              ],
-            ),
-            backgroundColor: const Color(0xFF16A34A),
-            duration: const Duration(seconds: 1),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-          ),
-        );
       }
     }
   }
@@ -694,16 +648,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   // Automatically creates or updates the new lead in backend as the user types
   // =========================================================================
   void _triggerAutoSaveNewLead() {
-    if (!_isAutoSaveEnabled) {
-      _hasUnsavedChanges = true;
-      _autoSaveStatusNotifier.value = 'Unsaved changes';
-      return;
-    }
     _autoSaveNewLeadTimer?.cancel();
     _isAutoSavingNotifier.value = true;
     _autoSaveStatusNotifier.value = 'Auto-saving...';
 
-    _autoSaveNewLeadTimer = Timer(const Duration(milliseconds: 1200), () async {
+    _autoSaveNewLeadTimer = Timer(const Duration(milliseconds: 900), () async {
       await _commitAutoSaveNewLead();
     });
   }
@@ -711,12 +660,6 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   Future<void> _commitAutoSaveNewLead({bool showToast = false}) async {
     _autoSaveNewLeadTimer?.cancel();
     if (_sheet == null || !_isAddingInlineRow) return;
-
-    if (!_isAutoSaveEnabled) {
-      _hasUnsavedChanges = true;
-      _autoSaveStatusNotifier.value = 'Unsaved changes';
-      return;
-    }
 
     final Map<String, dynamic> rowData = {};
     for (var col in _sheet!.columns) {
@@ -731,7 +674,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     if (rowData.isEmpty) {
       if (mounted) {
         _isAutoSavingNotifier.value = false;
-        _autoSaveStatusNotifier.value = _isAutoSaveEnabled ? 'Auto-save on' : 'Manual save';
+        _autoSaveStatusNotifier.value = 'Auto-saved';
       }
       return;
     }
@@ -780,26 +723,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       if (response['status'] == true) {
         // Crucial: Keep the row open and do NOT wipe page with full reload while user is typing!
         _isAutoSavingNotifier.value = false;
-        _autoSaveStatusNotifier.value = 'New lead saved';
-
-        if (showToast) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
-                  SizedBox(width: 8),
-                  Text('New lead saved!'),
-                ],
-              ),
-              backgroundColor: Color(0xFF16A34A),
-              duration: Duration(seconds: 1),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
-          );
-        }
+        _autoSaveStatusNotifier.value = 'Auto-saved';
       }
     } catch (_) {
     } finally {
@@ -830,326 +754,26 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
     // Reached the end of the editable boxes in this row
     if (isInlineAddRow) {
-      if (_isAutoSaveEnabled) {
-        _saveInlineAddLead();
-      }
+      _saveInlineAddLead();
     } else if (editingRow != null) {
-      if (_isAutoSaveEnabled) {
-        _saveInlineRowEdit(editingRow);
-      }
+      _saveInlineRowEdit(editingRow);
     }
   }
 
   // =========================================================================
-  // MANUAL SAVE ALL PENDING CHANGES (Used when Auto-Save is OFF)
-  // =========================================================================
-  Future<bool> _saveAllPendingChanges({bool popAfter = false}) async {
-    setState(() => _isSavingInline = true);
-    bool allSuccess = true;
-
-    try {
-      // 1. If currently adding an inline new lead row
-      if (_isAddingInlineRow) {
-        final Map<String, dynamic> rowData = {};
-        for (var col in _sheet!.columns) {
-          final text = _newRowControllers[col.columnKey]?.text.trim() ??
-                       _newRowControllers[col.columnName]?.text.trim() ?? '';
-          if (text.isNotEmpty) {
-            rowData[col.columnName] = text;
-            rowData[col.columnKey] = text;
-          }
-        }
-        if (rowData.isNotEmpty) {
-          final sheetId = int.tryParse(widget.sheetId) ?? _sheet!.id;
-          final rawStatus = (rowData['Status'] ?? rowData['status'] ?? _newRowStatus).toString();
-          final statusVal = rawStatus.toLowerCase().replaceAll(' ', '_');
-          rowData['Status'] = _formatStatusLabel(rawStatus);
-          rowData['status'] = statusVal;
-
-          Map<String, dynamic> res;
-          if (_newlyCreatedRowId != null) {
-            res = await ApiService.updateRow(
-              rowId: _newlyCreatedRowId!,
-              userId: _currentUserId,
-              data: rowData,
-              status: statusVal,
-              role: _getUserRoleString(),
-            );
-          } else {
-            res = await ApiService.addRow(
-              sheetId: sheetId,
-              createdBy: _currentUserId,
-              status: statusVal,
-              data: rowData,
-            );
-          }
-          if (res['status'] != true) allSuccess = false;
-          _newlyCreatedRowId = null;
-          if (!popAfter) {
-            _cancelInlineAddLead();
-          }
-        }
-      }
-
-      // 2. If currently editing an existing row inline
-      if (_editingRowId != null) {
-        final rows = _filteredRows;
-        final editingRow = rows.firstWhere(
-          (r) => r.id == _editingRowId,
-          orElse: () => _sheet!.rows.firstWhere((r) => r.id == _editingRowId, orElse: () => _sheet!.rows.first),
-        );
-        final Map<String, dynamic> updatedData = Map.from(editingRow.data);
-        for (var col in _sheet!.columns) {
-          final text = _editRowControllers[col.columnKey]?.text.trim() ??
-                       _editRowControllers[col.columnName]?.text.trim() ?? '';
-          updatedData[col.columnName] = text;
-          updatedData[col.columnKey] = text;
-        }
-        final rawStatus = (updatedData['Status'] ?? updatedData['status'] ?? _editRowStatus ?? editingRow.status).toString();
-        final statusVal = rawStatus.toLowerCase().replaceAll(' ', '_');
-        updatedData['Status'] = _formatStatusLabel(rawStatus);
-        updatedData['status'] = statusVal;
-
-        final res = await ApiService.updateRow(
-          rowId: editingRow.id,
-          userId: _currentUserId,
-          data: updatedData,
-          status: statusVal,
-          role: _getUserRoleString(),
-        );
-        if (res['status'] == true) {
-          editingRow.data.addAll(updatedData);
-          editingRow.status = statusVal;
-          if (!popAfter) {
-            _cancelInlineRowEdit();
-          }
-        } else {
-          allSuccess = false;
-        }
-      }
-
-      // 3. Any individual pending cell edits
-      if (_pendingCellEdits.isNotEmpty) {
-        for (var entry in _pendingCellEdits.entries) {
-          final rowId = entry.key;
-          final cellData = entry.value;
-          for (var colEntry in cellData.entries) {
-            final colKey = colEntry.key;
-            final val = colEntry.value;
-            await ApiService.updateCell(
-              rowId: rowId,
-              columnKey: colKey,
-              value: val.toString(),
-              userId: _currentUserId,
-            );
-          }
-        }
-        _pendingCellEdits.clear();
-      }
-
-      if (mounted) {
-        setState(() {
-          _hasUnsavedChanges = false;
-          _isSavingInline = false;
-        });
-        _autoSaveStatusNotifier.value = 'All changes saved';
-
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
-                SizedBox(width: 8),
-                Text('All changes saved successfully!'),
-              ],
-            ),
-            backgroundColor: Color(0xFF16A34A),
-            duration: Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(16),
-          ),
-        );
-
-        if (!popAfter) {
-          _fetchSheetData(showLoading: false);
-        }
-      }
-      return allSuccess;
-    } catch (_) {
-      if (mounted) {
-        setState(() => _isSavingInline = false);
-      }
-      return false;
-    }
-  }
-
-  // =========================================================================
-  // BACK BUTTON INTERCEPTION: Prompt to Save / Discard if Auto-Save is OFF
+  // BACK BUTTON NAVIGATION: Direct & Fast Pop
   // =========================================================================
   Future<void> _handleBackPress() async {
-    if (!_shouldBlockBackNavigation) {
-      if (mounted) Navigator.of(context).pop();
-      return;
-    }
-
-    final action = await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 26),
-            SizedBox(width: 10),
-            Text('Unsaved Changes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-          ],
-        ),
-        content: const Text(
-          'Auto-save is currently disabled and you have unsaved changes in this sheet. Do you want to save your changes before leaving?',
-          style: TextStyle(fontSize: 13.5, color: Color(0xFF475569), height: 1.4),
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        actions: [
-          OutlinedButton(
-            onPressed: () => Navigator.of(ctx).pop('cancel'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF64748B),
-              side: const BorderSide(color: Color(0xFFCBD5E1)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('Cancel'),
-          ),
-          OutlinedButton(
-            onPressed: () => Navigator.of(ctx).pop('discard'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.error,
-              side: const BorderSide(color: AppColors.error),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('Discard'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.of(ctx).pop('save'),
-            icon: const Icon(Icons.save_rounded, size: 16),
-            label: const Text('Save & Exit'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF16A34A),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (!mounted) return;
-
-    if (action == 'discard') {
-      _hasUnsavedChanges = false;
-      _pendingCellEdits.clear();
-      _cancelInlineAddLead();
-      _cancelInlineRowEdit();
+    _autoSaveTimer?.cancel();
+    _autoSaveNewLeadTimer?.cancel();
+    if (mounted) {
       Navigator.of(context).pop();
-    } else if (action == 'save') {
-      final success = await _saveAllPendingChanges(popAfter: true);
-      if (success && mounted) {
-        Navigator.of(context).pop();
-      }
     }
   }
 
   // =========================================================================
-  // TOP SECTION UI: Auto-Save ON/OFF Switch Toggle & Manual Save Button
+  // TOP SECTION UI: Smooth Auto-Save Status Indicator (Always Active)
   // =========================================================================
-  Widget _buildAutoSaveToggle({bool isCompact = false}) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: isCompact ? 6 : 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: _isAutoSaveEnabled ? const Color(0xFFF0FDF4) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: _isAutoSaveEnabled ? const Color(0xFF86EFAC) : const Color(0xFFCBD5E1),
-          width: 1.2,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            _isAutoSaveEnabled ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
-            size: isCompact ? 13 : 15,
-            color: _isAutoSaveEnabled ? const Color(0xFF16A34A) : const Color(0xFF64748B),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            _isAutoSaveEnabled ? 'Auto-Save' : 'Manual',
-            style: TextStyle(
-              fontSize: isCompact ? 10.5 : 11.5,
-              fontWeight: FontWeight.w700,
-              color: _isAutoSaveEnabled ? const Color(0xFF15803D) : const Color(0xFF475569),
-            ),
-          ),
-          const SizedBox(width: 2),
-          Transform.scale(
-            scale: isCompact ? 0.6 : 0.68,
-            child: Switch(
-              value: _isAutoSaveEnabled,
-              activeThumbColor: const Color(0xFF16A34A),
-              activeTrackColor: const Color(0xFFBBF7D0),
-              inactiveThumbColor: const Color(0xFF94A3B8),
-              inactiveTrackColor: const Color(0xFFE2E8F0),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              onChanged: (val) {
-                setState(() {
-                  _isAutoSaveEnabled = val;
-                  if (val) {
-                    _autoSaveStatusNotifier.value = 'Auto-save on';
-                    if (_hasUnsavedData) {
-                      _saveAllPendingChanges();
-                    }
-                  } else {
-                    _autoSaveTimer?.cancel();
-                    _autoSaveNewLeadTimer?.cancel();
-                    _isAutoSavingNotifier.value = false;
-                    _autoSaveStatusNotifier.value = _hasUnsavedData ? 'Unsaved changes' : 'Auto-save off';
-                  }
-                });
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildManualSaveButton({bool isCompact = false}) {
-    if (_isAutoSaveEnabled) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: ElevatedButton.icon(
-        onPressed: _isSavingInline ? null : () => _saveAllPendingChanges(),
-        icon: _isSavingInline
-            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-            : const Icon(Icons.save_rounded, size: 16),
-        label: Text(
-          _isSavingInline
-              ? 'Saving...'
-              : (_hasUnsavedData ? 'Save Changes *' : 'Save'),
-          style: TextStyle(fontSize: isCompact ? 11 : 12, fontWeight: FontWeight.bold),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _hasUnsavedData ? const Color(0xFF16A34A) : const Color(0xFF0F172A),
-          foregroundColor: Colors.white,
-          padding: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 12, vertical: 6),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          elevation: _hasUnsavedData ? 2 : 0,
-        ),
-      ),
-    );
-  }
-
   Widget _buildAutoSaveStatusIndicator() {
     return ValueListenableBuilder<bool>(
       valueListenable: _isAutoSavingNotifier,
@@ -1157,26 +781,18 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
         return ValueListenableBuilder<String>(
           valueListenable: _autoSaveStatusNotifier,
           builder: (context, statusText, _) {
-            final isOfflineOrUnsaved = !_isAutoSaveEnabled && _hasUnsavedData;
-            Color bgColor = isAutoSaving
-                ? const Color(0xFFFEF3C7)
-                : (_isAutoSaveEnabled ? const Color(0xFFDCFCE7) : (isOfflineOrUnsaved ? const Color(0xFFFFF7ED) : const Color(0xFFF1F5F9)));
-            Color borderColor = isAutoSaving
+            final Color bgColor = isAutoSaving
+                ? const Color(0xFFFEF3C7) // Light amber
+                : const Color(0xFFDCFCE7); // Light green
+            final Color borderColor = isAutoSaving
                 ? const Color(0xFFFDE68A)
-                : (_isAutoSaveEnabled ? const Color(0xFFBBF7D0) : (isOfflineOrUnsaved ? const Color(0xFFFED7AA) : const Color(0xFFE2E8F0)));
-            Color textColor = isAutoSaving
+                : const Color(0xFFBBF7D0);
+            final Color textColor = isAutoSaving
                 ? const Color(0xFFB45309)
-                : (_isAutoSaveEnabled ? const Color(0xFF15803D) : (isOfflineOrUnsaved ? const Color(0xFFC2410C) : const Color(0xFF64748B)));
-            IconData icon = isAutoSaving
-                ? Icons.sync_rounded
-                : (_isAutoSaveEnabled ? Icons.cloud_done_rounded : (isOfflineOrUnsaved ? Icons.edit_note_rounded : Icons.cloud_off_rounded));
-
-            final displayText = !_isAutoSaveEnabled
-                ? (isOfflineOrUnsaved ? 'Unsaved changes' : 'Manual save')
-                : statusText;
+                : const Color(0xFF15803D);
 
             return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: bgColor,
                 borderRadius: BorderRadius.circular(8),
@@ -1185,12 +801,22 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, size: 15, color: textColor),
+                  if (isAutoSaving)
+                    const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFB45309)),
+                      ),
+                    )
+                  else
+                    Icon(Icons.cloud_done_rounded, size: 14, color: textColor),
                   const SizedBox(width: 6),
                   Text(
-                    displayText,
+                    isAutoSaving ? 'Auto-saving...' : 'Auto-saved',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11.5,
                       fontWeight: FontWeight.w700,
                       color: textColor,
                     ),
@@ -2647,7 +2273,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
     return PopScope(
-      canPop: !_shouldBlockBackNavigation,
+      canPop: true,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         await _handleBackPress();
@@ -2685,16 +2311,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
           elevation: 0,
           actions: isDesktop
               ? [
-                  // DESKTOP WIDESCREEN ACTIONS (100% UNCHANGED)
-                  // Manual Save Button (Visible when Auto-Save is OFF)
-                  _buildManualSaveButton(isCompact: false),
-
-                  // Auto-Save ON/OFF Switch Toggle
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-                    child: _buildAutoSaveToggle(isCompact: false),
-                  ),
-
+                  // DESKTOP WIDESCREEN ACTIONS
                   // Toggle View Button (Cards vs Table)
                   IconButton(
                     tooltip: _isTableView ? 'Switch to Cards View' : 'Switch to Table View',
@@ -2743,7 +2360,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                         label: Text(
                           _isSavingInline
                               ? 'Saving...'
-                              : (_isAutoSaveEnabled ? 'Done (Auto-saved)' : 'Save Lead'),
+                              : 'Done',
                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                         ),
                         style: ElevatedButton.styleFrom(
@@ -2808,21 +2425,17 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     ],
                   ],
 
-                  // Real-time Auto-Save Cloud Status Indicator (Auto-saves all cell edits)
+                  // Real-time Auto-Save Cloud Status Indicator
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0, bottom: 8.0, right: 12.0),
                     child: _buildAutoSaveStatusIndicator(),
                   ),
                 ]
               : [
-                  // MOBILE ADAPTIVE CLEAN ACTIONS (ZERO OVERFLOW)
-                  // Manual Save Button (Visible when Auto-Save is OFF)
-                  _buildManualSaveButton(isCompact: true),
-
-                  // Auto-Save ON/OFF Switch Toggle on Mobile
+                  // MOBILE ACTIONS: Auto-Save Status Indicator
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 2.0),
-                    child: _buildAutoSaveToggle(isCompact: true),
+                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                    child: _buildAutoSaveStatusIndicator(),
                   ),
 
                   if (_isAddingInlineRow || _editingRowId != null) ...[
@@ -2886,54 +2499,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       icon: const Icon(Icons.more_vert_rounded, color: AppColors.textPrimary, size: 22),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       onSelected: (val) {
-                        if (val == 'toggle_autosave') {
-                          setState(() {
-                            _isAutoSaveEnabled = !_isAutoSaveEnabled;
-                            if (_isAutoSaveEnabled) {
-                              _autoSaveStatusNotifier.value = 'Auto-save on';
-                              if (_hasUnsavedData) _saveAllPendingChanges();
-                            } else {
-                              _autoSaveTimer?.cancel();
-                              _autoSaveNewLeadTimer?.cancel();
-                              _isAutoSavingNotifier.value = false;
-                              _autoSaveStatusNotifier.value = _hasUnsavedData ? 'Unsaved changes' : 'Auto-save off';
-                            }
-                          });
-                        }
-                        if (val == 'save_changes') _saveAllPendingChanges();
                         if (val == 'history') _showEditHistoryDialog();
                         if (val == 'add_lead') _showAddLeadDialog();
                         if (val == 'assign_staff') _showAssignToStaffDialog();
                       },
                       itemBuilder: (ctx) => [
-                        PopupMenuItem(
-                          value: 'toggle_autosave',
-                          child: Row(
-                            children: [
-                              Icon(
-                                _isAutoSaveEnabled ? Icons.cloud_off_rounded : Icons.cloud_done_rounded,
-                                size: 18,
-                                color: _isAutoSaveEnabled ? const Color(0xFF64748B) : const Color(0xFF16A34A),
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                _isAutoSaveEnabled ? 'Turn Auto-Save OFF' : 'Turn Auto-Save ON',
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (!_isAutoSaveEnabled)
-                          const PopupMenuItem(
-                            value: 'save_changes',
-                            child: Row(
-                              children: [
-                                Icon(Icons.save_rounded, size: 18, color: Color(0xFF16A34A)),
-                                SizedBox(width: 10),
-                                Text('Save Changes', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                              ],
-                            ),
-                          ),
                         if (_isManager)
                           const PopupMenuItem(
                             value: 'history',
@@ -3245,43 +2815,6 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
             ),
           ),
 
-          // Unsaved Changes Alert Banner on Mobile when Auto-Save is OFF
-          if (!_isAutoSaveEnabled && _hasUnsavedData)
-            Container(
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFFDE68A)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFFD97706)),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Unsaved changes pending',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF92400E)),
-                    ),
-                  ),
-                  InkWell(
-                    onTap: _isSavingInline ? null : () => _saveAllPendingChanges(),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF16A34A),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        _isSavingInline ? 'Saving...' : 'Save',
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
@@ -3970,6 +3503,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       updatedData['status'] = newStatus;
     }
 
+    // In-memory update immediately for ultra-smooth UI
     setState(() {
       row.data[col.columnName] = newValue;
       row.data[col.columnKey] = newValue;
@@ -3980,20 +3514,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       }
     });
 
-    if (!_isAutoSaveEnabled) {
-      _pendingCellEdits.putIfAbsent(row.id, () => {})[col.columnKey] = newValue;
-      _pendingCellEdits[row.id]![col.columnName] = newValue;
-      _hasUnsavedChanges = true;
-      _autoSaveStatusNotifier.value = 'Unsaved changes';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${col.columnName} set to "$newValue" (Unsaved)'),
-          backgroundColor: const Color(0xFF0F172A),
-          duration: const Duration(seconds: 1),
-        ),
-      );
-      return;
-    }
+    _isAutoSavingNotifier.value = true;
+    _autoSaveStatusNotifier.value = 'Auto-saving...';
 
     try {
       final response = await ApiService.updateRow(
@@ -4007,32 +3529,28 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       if (!mounted) return;
 
       if (response['status'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${col.columnName} updated to "$newValue"'),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        _fetchSheetData();
+        _isAutoSavingNotifier.value = false;
+        _autoSaveStatusNotifier.value = 'Auto-saved';
       } else {
+        _isAutoSavingNotifier.value = false;
+        _autoSaveStatusNotifier.value = 'Save failed';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(response['message'] ?? 'Failed to update ${col.columnName}.'),
             backgroundColor: AppColors.error,
           ),
         );
-        _fetchSheetData();
       }
     } catch (e) {
       if (!mounted) return;
+      _isAutoSavingNotifier.value = false;
+      _autoSaveStatusNotifier.value = 'Save error';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error updating: $e'),
           backgroundColor: AppColors.error,
         ),
       );
-      _fetchSheetData();
     }
   }
 
@@ -4617,7 +4135,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                               ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                               : const Icon(Icons.check_circle_rounded, size: 16),
                           label: Text(
-                            _isSavingInline ? 'Saving...' : (_isAutoSaveEnabled ? 'Done (Auto-saved)' : 'Save Lead'),
+                            _isSavingInline ? 'Saving...' : 'Done',
                             style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
                           ),
                           style: ElevatedButton.styleFrom(
@@ -4641,14 +4159,12 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                           ),
                         ),
                         const SizedBox(width: 14),
-                        Text(
-                          _isAutoSaveEnabled
-                              ? '⚡ Auto-Save Active — Type into any cell box below and it saves automatically!'
-                              : '⚠️ Auto-Save OFF — Click "Save Lead" or top "Save" button to save your changes',
+                        const Text(
+                          '⚡ Auto-Save Active — Type into any cell box below and it saves automatically!',
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w600,
-                            color: _isAutoSaveEnabled ? const Color(0xFF16A34A) : const Color(0xFFD97706),
+                            color: Color(0xFF16A34A),
                           ),
                         ),
                       ] else if (_editingRowId != null) ...[
@@ -4666,7 +4182,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                                     ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                                     : const Icon(Icons.check_circle_rounded, size: 16),
                                 label: Text(
-                                  _isSavingInline ? 'Saving...' : (_isAutoSaveEnabled ? 'Done (Auto-saved)' : 'Save Row'),
+                                  _isSavingInline ? 'Saving...' : 'Done',
                                   style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
                                 ),
                                 style: ElevatedButton.styleFrom(
@@ -4691,13 +4207,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                               ),
                               const SizedBox(width: 14),
                               Text(
-                                _isAutoSaveEnabled
-                                    ? '⚡ Auto-Save Active — Row #$_editingRowId cell changes are saving automatically!'
-                                    : '⚠️ Auto-Save OFF — Click "Save Row" or top "Save" button to commit changes',
-                                style: TextStyle(
+                                '⚡ Auto-Save Active — Row #$_editingRowId changes are saving automatically!',
+                                style: const TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w600,
-                                  color: _isAutoSaveEnabled ? const Color(0xFF16A34A) : const Color(0xFFD97706),
+                                  color: Color(0xFF16A34A),
                                 ),
                               ),
                             ],
@@ -4719,10 +4233,6 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                           ),
                           const SizedBox(width: 14),
                         ],
-                        if (!_isAutoSaveEnabled) ...[
-                          _buildManualSaveButton(isCompact: false),
-                          const SizedBox(width: 14),
-                        ],
                         const Text(
                           'Google Sheets Grid — Click any cell box to edit or click Add Row to insert a new lead',
                           style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
@@ -4732,9 +4242,6 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              // Auto-Save ON/OFF Toggle in Grid Toolbar
-              _buildAutoSaveToggle(isCompact: true),
               const SizedBox(width: 8),
               // Excel Formula / Calculation Quick Button
               ElevatedButton.icon(
