@@ -1,3 +1,5 @@
+import 'package:agency_head/core/models/api_spreadsheet_model.dart';
+
 class AllHistoryItem {
   final int id;
   final int sheetId;
@@ -11,6 +13,7 @@ class AllHistoryItem {
   final String createdAt;
   final String formattedDate;
   final String summaryText;
+  final String? displayTime;
 
   const AllHistoryItem({
     required this.id,
@@ -25,9 +28,23 @@ class AllHistoryItem {
     required this.createdAt,
     required this.formattedDate,
     required this.summaryText,
+    this.displayTime,
   });
 
   factory AllHistoryItem.fromJson(Map<String, dynamic> json) {
+    // Check multiple possible key names for timestamp
+    final rawDate = json['formatted_date'] ??
+        json['created_at'] ??
+        json['edited_at'] ??
+        json['updated_at'] ??
+        json['edit_time'] ??
+        json['timestamp'] ??
+        json['time'] ??
+        json['date'] ??
+        json['datetime'];
+
+    final formatted = formatHistoryDateTime(rawDate);
+
     return AllHistoryItem(
       id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
       sheetId: int.tryParse(json['sheet_id']?.toString() ?? '0') ?? 0,
@@ -39,8 +56,9 @@ class AllHistoryItem {
       oldValue: (json['old_value'] ?? '').toString(),
       newValue: (json['new_value'] ?? '').toString(),
       createdAt: (json['created_at'] ?? '').toString(),
-      formattedDate: (json['formatted_date'] ?? '').toString(),
+      formattedDate: formatted ?? (json['formatted_date'] ?? '').toString(),
       summaryText: (json['summary_text'] ?? '').toString(),
+      displayTime: formatted,
     );
   }
 
@@ -58,6 +76,7 @@ class AllHistoryItem {
       'created_at': createdAt,
       'formatted_date': formattedDate,
       'summary_text': summaryText,
+      'display_time': displayTime,
     };
   }
 }

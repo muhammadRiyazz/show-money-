@@ -66,9 +66,24 @@ jobs:
       - name: Build Windows Release
         run: flutter build windows --release
 
-      - name: Compress Release Files to ZIP
+      - name: Locate and Compress Release Bundle
+        shell: pwsh
         run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath windows_app_release.zip
+          $buildDir = ""
+          if (Test-Path "build\windows\x64\runner\Release") {
+            $buildDir = "build\windows\x64\runner\Release"
+          } elseif (Test-Path "build\windows\runner\Release") {
+            $buildDir = "build\windows\runner\Release"
+          } else {
+            $found = Get-ChildItem -Path "build\windows" -Recurse -Filter "Release" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+            if ($found) { $buildDir = $found.FullName }
+          }
+          if (-not $buildDir) {
+            Write-Error "Could not find Windows Release directory!"
+            exit 1
+          }
+          Write-Host "Compressing Windows release from $buildDir..."
+          Compress-Archive -Path "$buildDir\*" -DestinationPath "windows_app_release.zip" -Force
 
       - name: Upload Windows Release Bundle
         uses: actions/upload-artifact@v4

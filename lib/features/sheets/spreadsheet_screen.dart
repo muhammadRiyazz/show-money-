@@ -40,6 +40,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   int? _editingRowId;
   int? _newlyCreatedRowId;
   bool _isSavingInline = false;
+  // Tracks the temp negative ID of an optimistically-inserted new row that is
+  // awaiting server confirmation. Null when no pending optimistic row exists.
+  int? _optimisticTempRowId;
   final Map<String, TextEditingController> _newRowControllers = {};
   final Map<String, FocusNode> _newRowFocusNodes = {};
   String _newRowStatus = 'new';
@@ -241,9 +244,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
   List<ApiRow> get _filteredRows {
     if (_sheet == null) return [];
-    return _sheet!.rows.where((row) {
-      if (row.id <= 0 && row.leadName.startsWith('Lead #')) {
-        // Skip padding dummy rows
+    final list = _sheet!.rows.where((row) {
+      if (row.id <= 0 && row.leadName.startsWith('Lead #') &&
+          (_optimisticTempRowId == null || row.id != _optimisticTempRowId)) {
+        // Skip padding dummy rows — but always keep any optimistic temp row visible
         return false;
       }
       if (_selectedStatusFilter != 'all') {
@@ -261,14 +265,29 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       }
       return true;
     }).toList();
+
+    // Deterministic stable sorting: strictly maintain sequential / chronological order
+    list.sort((a, b) {
+      if (a.rowIndex > 0 && b.rowIndex > 0 && a.rowIndex != b.rowIndex) {
+        return a.rowIndex.compareTo(b.rowIndex);
+      }
+      if (a.id > 0 && b.id > 0) {
+        return a.id.compareTo(b.id);
+      }
+      if (a.id < 0 && b.id > 0) return 1;
+      if (a.id > 0 && b.id < 0) return -1;
+      return 0;
+    });
+
+    return list;
   }
 
   // =========================================================================
   // INLINE SPREADSHEET ROW ADDING & EDITING (No Modal Dialogs!)
   // =========================================================================
 
-  /// Activates the inline "New Lead" row right at the top of the spreadsheet grid.
-  void _startInlineAddLead() {
+  /// Activates the inline "New Lead" row at the bottom of the spreadsheet grid.
+  void _startInlineAddLead({String? focusColumn}) {
     final cols = (_sheet != null && _sheet!.columns.isNotEmpty)
         ? _sheet!.columns
         : <ApiColumn>[];
@@ -313,12 +332,15 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       _editingRowId = null; // Exit any existing row edit
     });
 
-    if (_verticalController.hasClients) {
-      _verticalController.animateTo(0, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
-    }
-
-    // Auto-focus the first editable text field in the new lead row
+    // Auto-focus the targeted or first editable text field in the new lead row
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (focusColumn != null) {
+        final fn = _newRowFocusNodes[focusColumn];
+        if (fn != null && fn.canRequestFocus) {
+          fn.requestFocus();
+          return;
+        }
+      }
       for (var col in cols) {
         if (!_isDropdownColumn(col)) {
           final fn = _newRowFocusNodes[col.columnKey] ?? _newRowFocusNodes[col.columnName];
@@ -403,18 +425,25 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
         _newlyCreatedRowId = null;
 
         if (_sheet != null && !_sheet!.rows.any((r) => r.id == newRowId)) {
+          final maxIndex = _sheet!.rows.isNotEmpty
+              ? _sheet!.rows.map((r) => r.rowIndex).fold(0, math.max)
+              : 0;
           final newRow = ApiRow(
             id: newRowId,
             sheetId: sheetId,
-            rowIndex: 1,
+            rowIndex: maxIndex + 1,
             status: statusVal,
             createdBy: _currentUserId,
             data: Map<String, dynamic>.from(rowData),
           );
-          _sheet!.rows.insert(0, newRow);
+          _sheet!.rows.add(newRow); // Append to bottom, preserving chronological order
         }
 
         _autoSaveStatusNotifier.value = 'New lead added';
+        if (_optimisticTempRowId != null) {
+          _sheet?.rows.removeWhere((r) => r.id == _optimisticTempRowId);
+          _optimisticTempRowId = null;
+        }
         _cancelInlineAddLead();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -442,7 +471,33 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
         ? _sheet!.columns
         : <ApiColumn>[];
 
+    // If already editing this exact row, just shift focus — do NOT reset controllers
+    // (resetting would wipe text the user just typed but hasn't auto-saved yet)
+    if (_editingRowId == row.id) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (focusColumn != null) {
+          final fn = _editRowFocusNodes[focusColumn];
+          if (fn != null && fn.canRequestFocus) {
+            fn.requestFocus();
+            return;
+          }
+        }
+      });
+      return;
+    }
+
+    // Switching to a different row: flush any pending auto-save for the old row first.
+    // This ensures the previously edited row's data is committed before we switch contexts.
+    if (_editingRowId != null && _autoSaveTimer != null) {
+      _autoSaveTimer?.cancel();
+      // The timer had a pending save — it already called row.setValue(), so row.data
+      // is current. We just needed to cancel the timer to avoid double-fire.
+    }
+
     for (var col in cols) {
+      // Read from row.data (which is kept optimistically up-to-date by _triggerAutoSave
+      // calling row.setValue() on every keystroke) so the controller always starts
+      // with the most recent in-memory value, never stale server data.
       String val = row.getValue(col);
       final colLower = col.columnName.trim().toLowerCase();
       final isStatus = colLower == 'status' || colLower.contains('status') || col.columnKey.toLowerCase().contains('status');
@@ -500,9 +555,84 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
   void _cancelInlineRowEdit() {
     _autoSaveTimer?.cancel();
+    _autoSaveTimer = null;
     setState(() {
       _editingRowId = null;
     });
+  }
+
+  /// Seamless background save without blocking UI or resetting active edit row
+  void _flushAndSaveRow(ApiRow row) {
+    if (_sheet == null) return;
+
+    final Map<String, dynamic> updatedData = Map.from(row.data);
+    for (var col in _sheet!.columns) {
+      final text = _editRowControllers[col.columnKey]?.text.trim() ??
+                   _editRowControllers[col.columnName]?.text.trim() ?? '';
+      updatedData[col.columnName] = text;
+      updatedData[col.columnKey] = text;
+    }
+
+    final rawStatus = (updatedData['Status'] ?? updatedData['status'] ?? _editRowStatus ?? row.status).toString();
+    final statusVal = rawStatus.toLowerCase().replaceAll(' ', '_');
+    updatedData['Status'] = _formatStatusLabel(rawStatus);
+    updatedData['status'] = statusVal;
+
+    // OPTIMISTIC UPDATE: patch in-memory immediately
+    row.data.addAll(updatedData);
+    row.status = statusVal;
+
+    _autoSaveTimer?.cancel();
+    _isAutoSavingNotifier.value = true;
+    _autoSaveStatusNotifier.value = 'Auto-saving...';
+
+    ApiService.updateRow(
+      rowId: row.id,
+      userId: _currentUserId,
+      data: updatedData,
+      status: statusVal,
+      role: _getUserRoleString(),
+    ).then((res) {
+      if (mounted) {
+        _isAutoSavingNotifier.value = false;
+        _autoSaveStatusNotifier.value = 'Auto-saved';
+      }
+    }).catchError((_) {
+      if (mounted) {
+        _isAutoSavingNotifier.value = false;
+      }
+    });
+  }
+
+  /// Switches focus immediately to targetRow, seamlessly finalizing any prior draft or edit
+  void _switchFocusToRow(ApiRow targetRow, String columnKey) {
+    if (_isAddingInlineRow) {
+      _finalizeNewRowOptimistically();
+    }
+    if (_editingRowId != null && _editingRowId != targetRow.id) {
+      final prevRow = _sheet?.rows.firstWhere(
+        (r) => r.id == _editingRowId,
+        orElse: () => targetRow,
+      );
+      if (prevRow != null && prevRow.id == _editingRowId) {
+        _flushAndSaveRow(prevRow);
+      }
+    }
+    _startInlineRowEdit(targetRow, focusColumn: columnKey);
+  }
+
+  /// Handles tapping an empty cell in the grid, starting a new lead at that column
+  void _handleEmptyCellTap(String columnKey) {
+    if (_isAddingInlineRow) {
+      _finalizeNewRowOptimistically();
+    } else if (_editingRowId != null) {
+      final prevIndex = _sheet?.rows.indexWhere((r) => r.id == _editingRowId) ?? -1;
+      if (prevIndex >= 0) {
+        _flushAndSaveRow(_sheet!.rows[prevIndex]);
+      }
+      _editingRowId = null;
+    }
+    _startInlineAddLead(focusColumn: columnKey.isNotEmpty ? columnKey : null);
   }
 
   Future<void> _saveInlineRowEdit(ApiRow row) async {
@@ -522,7 +652,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     updatedData['Status'] = _formatStatusLabel(rawStatus);
     updatedData['status'] = statusVal;
 
-    setState(() => _isSavingInline = true);
+    // OPTIMISTIC UPDATE: patch row.data immediately so the UI shows correct values
+    // before the API round-trip completes.
+    row.data.addAll(updatedData);
+    row.status = statusVal;
+
+    _autoSaveTimer?.cancel();
+    _isAutoSavingNotifier.value = true;
+    _autoSaveStatusNotifier.value = 'Auto-saving...';
 
     try {
       final response = await ApiService.updateRow(
@@ -536,10 +673,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       if (!mounted) return;
 
       if (response['status'] == true) {
-        row.data.addAll(updatedData);
-        row.status = statusVal;
-        _autoSaveStatusNotifier.value = 'Row auto-saved';
-        _cancelInlineRowEdit();
+        _autoSaveStatusNotifier.value = 'Auto-saved';
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -555,7 +689,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() => _isSavingInline = false);
+        _isAutoSavingNotifier.value = false;
       }
     }
   }
@@ -566,7 +700,13 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   // Never causes full page refresh or typing interference!
   // =========================================================================
   void _triggerAutoSave(ApiRow row, ApiColumn col, String newValue) {
+    // OPTIMISTIC UPDATE: write to in-memory row.data immediately.
+    // This is the key fix — when the editing row is later closed/blurred and
+    // the cell falls back to Case C (read-only), it reads from row.getValue(col)
+    // which pulls from row.data. Without this immediate write, the stale server
+    // value would flash until a manual refresh.
     row.setValue(col, newValue);
+
     _autoSaveTimer?.cancel();
     _isAutoSavingNotifier.value = true;
     _autoSaveStatusNotifier.value = 'Auto-saving...';
@@ -643,6 +783,80 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     }
   }
 
+
+
+
+  // =========================================================================
+  // OPTIMISTIC FINALIZE — Persist New Row Draft When Focus Shifts Away
+  // Inserts an in-memory ApiRow immediately so the UI never goes blank while
+  // the background API save completes. If auto-save already created the row,
+  // the real positive server ID is used directly. Otherwise a temporary
+  // negative ID is used and swapped for the real ID when the response arrives.
+  // =========================================================================
+  
+
+
+
+  void _finalizeNewRowOptimistically() {
+    if (_sheet == null || !_isAddingInlineRow) return;
+
+    // Collect the current controller values into a data map
+    final Map<String, dynamic> rowData = {};
+    for (var col in _sheet!.columns) {
+      final text = _newRowControllers[col.columnKey]?.text.trim() ??
+                   _newRowControllers[col.columnName]?.text.trim() ?? '';
+      rowData[col.columnName] = text;
+      rowData[col.columnKey] = text;
+    }
+
+    // If nothing was typed, cancel silently — no data to preserve
+    final hasContent = rowData.values.any((v) => v.toString().trim().isNotEmpty);
+    if (!hasContent) {
+      setState(() => _isAddingInlineRow = false);
+      return;
+    }
+
+    final rawStatus = (rowData['Status'] ?? rowData['status'] ?? _newRowStatus).toString();
+    final statusVal = rawStatus.toLowerCase().replaceAll(' ', '_');
+    rowData['Status'] = _formatStatusLabel(rawStatus);
+    rowData['status'] = statusVal;
+
+    // Use the real server ID if a prior background auto-save already created it,
+    // otherwise use a temporary negative ID as a placeholder.
+    final tempId = _newlyCreatedRowId ??
+        -(DateTime.now().millisecondsSinceEpoch % 100000000);
+    final sheetId = int.tryParse(widget.sheetId) ?? _sheet!.id;
+
+    if (_sheet!.rows.any((r) => r.id == tempId)) {
+      // Row already in list (real or prior optimistic) — just refresh its data
+      final existing = _sheet!.rows.firstWhere((r) => r.id == tempId);
+      existing.data.addAll(rowData);
+      existing.status = statusVal;
+    } else {
+      // Append new optimistic row to the end of the grid, preserving visual creation order
+      final maxIndex = _sheet!.rows.isNotEmpty
+          ? _sheet!.rows.map((r) => r.rowIndex).fold(0, math.max)
+          : 0;
+      final optimisticRow = ApiRow(
+        id: tempId,
+        sheetId: sheetId,
+        rowIndex: maxIndex + 1,
+        status: statusVal,
+        createdBy: _currentUserId,
+        data: Map<String, dynamic>.from(rowData),
+      );
+      _sheet!.rows.add(optimisticRow);
+      // Track the temp ID so we can reconcile it after the server responds
+      if (tempId < 0) _optimisticTempRowId = tempId;
+    }
+
+    _autoSaveNewLeadTimer?.cancel();
+
+    _commitAutoSaveNewLead(targetTempId: tempId);
+
+    setState(() => _isAddingInlineRow = false);
+  }
+
   // =========================================================================
   // REAL-TIME AUTO-SAVE FOR NEW LEADS (No full page reload!)
   // Automatically creates or updates the new lead in backend as the user types
@@ -657,9 +871,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     });
   }
 
-  Future<void> _commitAutoSaveNewLead({bool showToast = false}) async {
+  Future<void> _commitAutoSaveNewLead({bool showToast = false, int? targetTempId}) async {
     _autoSaveNewLeadTimer?.cancel();
-    if (_sheet == null || !_isAddingInlineRow) return;
+    if (_sheet == null) return;
 
     final Map<String, dynamic> rowData = {};
     for (var col in _sheet!.columns) {
@@ -714,6 +928,20 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               int.tryParse(response['id']?.toString() ?? '');
           if (createdId != null && createdId > 0) {
             _newlyCreatedRowId = createdId;
+            // Reconcile: if an optimistic placeholder row was inserted with a temp
+            // negative ID, update it in-place to the real server-assigned ID so
+            // the row becomes fully editable without a manual refresh.
+            final checkId = targetTempId ?? _optimisticTempRowId;
+            if (checkId != null && mounted) {
+              final tempIdx = _sheet?.rows.indexWhere((r) => r.id == checkId);
+              if (tempIdx != null && tempIdx >= 0) {
+                _sheet!.rows[tempIdx].id = createdId;
+                if (mounted) setState(() {});
+              }
+              if (_optimisticTempRowId == checkId) {
+                _optimisticTempRowId = null;
+              }
+            }
           }
         }
       }
@@ -752,11 +980,19 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       }
     }
 
-    // Reached the end of the editable boxes in this row
+    // Reached the end of the editable boxes in this row -> seamlessly move to next row
     if (isInlineAddRow) {
-      _saveInlineAddLead();
+      _finalizeNewRowOptimistically();
+      _startInlineAddLead();
     } else if (editingRow != null) {
-      _saveInlineRowEdit(editingRow);
+      _flushAndSaveRow(editingRow);
+      final rows = _filteredRows;
+      final currIdx = rows.indexWhere((r) => r.id == editingRow.id);
+      if (currIdx >= 0 && currIdx + 1 < rows.length) {
+        _startInlineRowEdit(rows[currIdx + 1]);
+      } else {
+        _startInlineAddLead();
+      }
     }
   }
 
@@ -1518,7 +1754,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   item.userName.toLowerCase().contains(q) ||
                   item.userRole.toLowerCase().contains(q) ||
                   item.oldValue.toLowerCase().contains(q) ||
-                  item.newValue.toLowerCase().contains(q);
+                  item.newValue.toLowerCase().contains(q) ||
+                  (item.displayTime?.toLowerCase().contains(q) ?? false);
             }).toList();
 
             return Dialog(
@@ -1735,10 +1972,17 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   ],
                 ),
               ),
-              if (item.createdAt.isNotEmpty)
-                Text(
-                  item.createdAt,
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+              if (item.displayTime != null)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.access_time_rounded, size: 12, color: Color(0xFF94A3B8)),
+                    const SizedBox(width: 4),
+                    Text(
+                      item.displayTime!,
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF64748B)),
+                    ),
+                  ],
                 ),
             ],
           ),
@@ -2336,93 +2580,37 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       icon: const Icon(Icons.history_rounded, color: AppColors.textPrimary),
                       onPressed: () => _showEditHistoryDialog(),
                     ),
-                  if (_isAddingInlineRow || _editingRowId != null) ...[
+                  if (_isManager) ...[
+                    // Manager: Add Lead to Sheet (POST api/add_row)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
                       child: ElevatedButton.icon(
-                        onPressed: _isSavingInline
-                            ? null
-                            : () {
-                                if (_isAddingInlineRow) {
-                                  _saveInlineAddLead();
-                                } else if (_editingRowId != null) {
-                                  final rows = _filteredRows;
-                                  final editingRow = rows.firstWhere(
-                                    (r) => r.id == _editingRowId,
-                                    orElse: () => _sheet!.rows.firstWhere((r) => r.id == _editingRowId, orElse: () => _sheet!.rows.first),
-                                  );
-                                  _saveInlineRowEdit(editingRow);
-                                }
-                              },
-                        icon: _isSavingInline
-                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : const Icon(Icons.check_circle_rounded, size: 16),
-                        label: Text(
-                          _isSavingInline
-                              ? 'Saving...'
-                              : 'Done',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
+                        onPressed: _showAddLeadDialog,
+                        icon: const Icon(Icons.person_add_rounded, size: 16),
+                        label: const Text('Add Lead', style: TextStyle(fontSize: 12)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF16A34A),
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          elevation: 1,
                         ),
                       ),
                     ),
+                    // Manager: Assign to Staff
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-                      child: OutlinedButton(
-                        onPressed: _isSavingInline
-                            ? null
-                            : () {
-                                if (_isAddingInlineRow) _cancelInlineAddLead();
-                                if (_editingRowId != null) _cancelInlineRowEdit();
-                              },
+                      child: OutlinedButton.icon(
+                        onPressed: _showAssignToStaffDialog,
+                        icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
+                        label: const Text('Assign Staff', style: TextStyle(fontSize: 12)),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF64748B),
-                          side: const BorderSide(color: Color(0xFFCBD5E1)),
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
-                        child: const Text('Cancel', style: TextStyle(fontSize: 12)),
                       ),
                     ),
-                  ] else ...[
-                    if (_isManager) ...[
-                      // Manager: Add Lead to Sheet (POST api/add_row)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-                        child: ElevatedButton.icon(
-                          onPressed: _showAddLeadDialog,
-                          icon: const Icon(Icons.person_add_rounded, size: 16),
-                          label: const Text('Add Lead', style: TextStyle(fontSize: 12)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ),
-                      // Manager: Assign to Staff
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-                        child: OutlinedButton.icon(
-                          onPressed: _showAssignToStaffDialog,
-                          icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
-                          label: const Text('Assign Staff', style: TextStyle(fontSize: 12)),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            side: const BorderSide(color: AppColors.primary),
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
 
                   // Real-time Auto-Save Cloud Status Indicator
@@ -2438,38 +2626,6 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     child: _buildAutoSaveStatusIndicator(),
                   ),
 
-                  if (_isAddingInlineRow || _editingRowId != null) ...[
-                    IconButton(
-                      tooltip: 'Save',
-                      icon: _isSavingInline
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF16A34A)))
-                          : const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 24),
-                      onPressed: _isSavingInline
-                          ? null
-                          : () {
-                              if (_isAddingInlineRow) {
-                                _saveInlineAddLead();
-                              } else if (_editingRowId != null) {
-                                final rows = _filteredRows;
-                                final editingRow = rows.firstWhere(
-                                  (r) => r.id == _editingRowId,
-                                  orElse: () => _sheet!.rows.firstWhere((r) => r.id == _editingRowId, orElse: () => _sheet!.rows.first),
-                                );
-                                _saveInlineRowEdit(editingRow);
-                              }
-                            },
-                    ),
-                    IconButton(
-                      tooltip: 'Cancel',
-                      icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B), size: 22),
-                      onPressed: _isSavingInline
-                          ? null
-                          : () {
-                              if (_isAddingInlineRow) _cancelInlineAddLead();
-                              if (_editingRowId != null) _cancelInlineRowEdit();
-                            },
-                    ),
-                  ],
                   IconButton(
                     tooltip: _isTableView ? 'Switch to Cards' : 'Switch to Table',
                     icon: Icon(
@@ -4128,116 +4284,27 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      if (_isAddingInlineRow) ...[
+                      if (_isManager || _isExecutive) ...[
                         ElevatedButton.icon(
-                          onPressed: _isSavingInline ? null : _saveInlineAddLead,
-                          icon: _isSavingInline
-                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.check_circle_rounded, size: 16),
-                          label: Text(
-                            _isSavingInline ? 'Saving...' : 'Done',
-                            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
-                          ),
+                          onPressed: () {
+                            _handleEmptyCellTap('');
+                          },
+                          icon: const Icon(Icons.add_rounded, size: 16),
+                          label: const Text('Add Row', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF16A34A),
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                            elevation: 1,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        OutlinedButton.icon(
-                          onPressed: _isSavingInline ? null : _cancelInlineAddLead,
-                          icon: const Icon(Icons.close_rounded, size: 16),
-                          label: const Text('Close', style: TextStyle(fontSize: 12)),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF64748B),
-                            side: const BorderSide(color: Color(0xFFCBD5E1)),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            elevation: 0,
                           ),
                         ),
                         const SizedBox(width: 14),
-                        const Text(
-                          '⚡ Auto-Save Active — Type into any cell box below and it saves automatically!',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF16A34A),
-                          ),
-                        ),
-                      ] else if (_editingRowId != null) ...[
-                        Builder(builder: (ctx) {
-                          final editingRow = rows.firstWhere(
-                            (r) => r.id == _editingRowId,
-                            orElse: () => _sheet!.rows.firstWhere((r) => r.id == _editingRowId, orElse: () => rows.first),
-                          );
-                          return Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ElevatedButton.icon(
-                                onPressed: _isSavingInline ? null : () => _saveInlineRowEdit(editingRow),
-                                icon: _isSavingInline
-                                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                    : const Icon(Icons.check_circle_rounded, size: 16),
-                                label: Text(
-                                  _isSavingInline ? 'Saving...' : 'Done',
-                                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF16A34A),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                                  elevation: 1,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              OutlinedButton.icon(
-                                onPressed: _isSavingInline ? null : _cancelInlineRowEdit,
-                                icon: const Icon(Icons.close_rounded, size: 16),
-                                label: const Text('Close', style: TextStyle(fontSize: 12)),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFF64748B),
-                                  side: const BorderSide(color: Color(0xFFCBD5E1)),
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Text(
-                                '⚡ Auto-Save Active — Row #$_editingRowId changes are saving automatically!',
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF16A34A),
-                                ),
-                              ),
-                            ],
-                          );
-                        }),
-                      ] else ...[
-                        if (_isManager) ...[
-                          ElevatedButton.icon(
-                            onPressed: _startInlineAddLead,
-                            icon: const Icon(Icons.add_rounded, size: 16),
-                            label: const Text('Add Row', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF16A34A),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                              elevation: 0,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                        ],
-                        const Text(
-                          'Google Sheets Grid — Click any cell box to edit or click Add Row to insert a new lead',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
-                        ),
                       ],
+                      const Text(
+                        '⚡ Reactive Grid — Click any cell to edit • Changes auto-save automatically in background',
+                        style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                      ),
                     ],
                   ),
                 ),
@@ -4732,7 +4799,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       Expanded(
                         child: InkWell(
                           onTap: () {
-                            _startInlineRowEdit(rowData, focusColumn: col.columnKey);
+                            _switchFocusToRow(rowData, col.columnKey);
                           },
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -4792,7 +4859,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               final val = rowData!.getValue(col);
               return InkWell(
                 onTap: () {
-                  _startInlineRowEdit(rowData, focusColumn: col.columnKey);
+                  _switchFocusToRow(rowData, col.columnKey);
                 },
                 onLongPress: () {
                   _showQuickEditCellDialog(rowData, col);
@@ -4823,10 +4890,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               );
             }
 
-            // Case D: Empty Google Sheets Row (Clicking any box activates inline adding)
+            // Case D: Empty Google Sheets Row (Clicking any box immediately focuses & edits at that cell)
             return InkWell(
               onTap: () {
-                _startInlineAddLead();
+                _handleEmptyCellTap(col.columnKey);
               },
               child: Container(
                 width: width,

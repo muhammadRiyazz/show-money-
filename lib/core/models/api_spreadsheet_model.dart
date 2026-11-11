@@ -1,3 +1,118 @@
+import 'package:intl/intl.dart';
+
+/// Formats a raw date/time dynamic value (ISO string, SQL timestamp, unix int, etc.)
+/// into a clean, human-readable local timestamp (e.g. "Today, 05:30 PM", "10 Nov, 02:15 PM").
+/// Returns `null` if the API provides no valid date/time.
+String? formatHistoryDateTime(dynamic raw) {
+  if (raw == null) return null;
+
+  DateTime? dt;
+  bool isDateOnly = false;
+
+  if (raw is DateTime) {
+    dt = raw.toLocal();
+  } else if (raw is int) {
+    if (raw <= 0) return null;
+    if (raw < 10000000000) {
+      dt = DateTime.fromMillisecondsSinceEpoch(raw * 1000, isUtc: true).toLocal();
+    } else {
+      dt = DateTime.fromMillisecondsSinceEpoch(raw, isUtc: true).toLocal();
+    }
+  } else {
+    final str = raw.toString().trim();
+    if (str.isEmpty) return null;
+    final lower = str.toLowerCase();
+    if (lower == 'null' ||
+        lower == 'undefined' ||
+        lower == 'none' ||
+        lower == 'n/a' ||
+        lower == '0' ||
+        lower.startsWith('0000-00-00')) {
+      return null;
+    }
+
+    final numeric = int.tryParse(str);
+    if (numeric != null && numeric > 0) {
+      if (numeric < 10000000000) {
+        dt = DateTime.fromMillisecondsSinceEpoch(numeric * 1000, isUtc: true).toLocal();
+      } else {
+        dt = DateTime.fromMillisecondsSinceEpoch(numeric, isUtc: true).toLocal();
+      }
+    } else {
+      // Date-only check (YYYY-MM-DD)
+      if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(str)) {
+        isDateOnly = true;
+        dt = DateTime.tryParse(str);
+      } else {
+        DateTime? parsed = DateTime.tryParse(str);
+        if (parsed == null) {
+          parsed = DateTime.tryParse(str.replaceAll(' ', 'T'));
+        }
+
+        if (parsed != null) {
+          if (str.endsWith('Z') || str.endsWith('z')) {
+            dt = parsed.toLocal();
+          } else if (RegExp(r'[+-]\d\d:?\d\d$').hasMatch(str)) {
+            dt = parsed.toLocal();
+          } else {
+            // MySQL/Backend raw timestamp without timezone is stored in UTC
+            final utcDt = DateTime.utc(
+              parsed.year,
+              parsed.month,
+              parsed.day,
+              parsed.hour,
+              parsed.minute,
+              parsed.second,
+              parsed.millisecond,
+              parsed.microsecond,
+            );
+            dt = utcDt.toLocal();
+          }
+        } else {
+          // Pre-formatted text (e.g. "Today, 4:30 PM", "Yesterday")
+          if (RegExp(r'[a-zA-Z0-9]').hasMatch(str)) {
+            return str;
+          }
+          return null;
+        }
+      }
+    }
+  }
+
+  if (dt == null) return null;
+
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final dateToCompare = DateTime(dt.year, dt.month, dt.day);
+  final differenceInDays = today.difference(dateToCompare).inDays;
+
+  if (isDateOnly) {
+    if (differenceInDays == 0) return 'Today';
+    if (differenceInDays == 1) return 'Yesterday';
+    if (now.year == dt.year) {
+      return DateFormat('dd MMM').format(dt);
+    }
+    return DateFormat('dd MMM yyyy').format(dt);
+  }
+
+  final timeFormat = DateFormat('hh:mm a');
+  final timeStr = timeFormat.format(dt);
+
+  if (differenceInDays == 0) {
+    return 'Today, $timeStr';
+  } else if (differenceInDays == 1) {
+    return 'Yesterday, $timeStr';
+  } else if (differenceInDays == -1) {
+    return 'Tomorrow, $timeStr';
+  } else if (now.year == dt.year) {
+    final dateFormat = DateFormat('dd MMM');
+    return '${dateFormat.format(dt)}, $timeStr';
+  } else {
+    final dateFormat = DateFormat('dd MMM yyyy');
+    return '${dateFormat.format(dt)}, $timeStr';
+  }
+}
+
 int _parseInt(dynamic value) {
   if (value == null) return 0;
   if (value is int) return value;
@@ -83,6 +198,7 @@ class ApiEditHistory {
   final String oldValue;
   final String newValue;
   final String createdAt;
+  final String? formattedTime;
 
   ApiEditHistory({
     required this.id,
@@ -96,9 +212,26 @@ class ApiEditHistory {
     required this.oldValue,
     required this.newValue,
     required this.createdAt,
+    this.formattedTime,
   });
 
+  /// Guaranteed formatted local time string or null if absent/invalid
+  String? get displayTime => formattedTime ?? formatHistoryDateTime(createdAt);
+
   factory ApiEditHistory.fromJson(Map<String, dynamic> json) {
+    // Check multiple possible key names from various API endpoints
+    final rawDate = json['created_at'] ??
+        json['edited_at'] ??
+        json['updated_at'] ??
+        json['edit_time'] ??
+        json['timestamp'] ??
+        json['time'] ??
+        json['date'] ??
+        json['formatted_date'] ??
+        json['datetime'];
+
+    final formatted = formatHistoryDateTime(rawDate);
+
     return ApiEditHistory(
       id: _parseInt(json['id']),
       sheetId: _parseInt(json['sheet_id']),
@@ -110,7 +243,8 @@ class ApiEditHistory {
       columnName: json['column_name']?.toString() ?? '',
       oldValue: json['old_value']?.toString() ?? '',
       newValue: json['new_value']?.toString() ?? '',
-      createdAt: json['created_at']?.toString() ?? '',
+      createdAt: rawDate?.toString() ?? '',
+      formattedTime: formatted,
     );
   }
 }

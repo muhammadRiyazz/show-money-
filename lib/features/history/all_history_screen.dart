@@ -110,6 +110,7 @@ class _AllHistoryScreenState extends State<AllHistoryScreen> {
             item.oldValue.toLowerCase().contains(q) ||
             item.newValue.toLowerCase().contains(q) ||
             item.summaryText.toLowerCase().contains(q) ||
+            (item.displayTime?.toLowerCase().contains(q) ?? false) ||
             item.formattedDate.toLowerCase().contains(q);
       }).toList();
     }
@@ -131,6 +132,15 @@ class _AllHistoryScreenState extends State<AllHistoryScreen> {
       if (h.sheetId > 0) sheets.add(h.sheetId);
     }
     return sheets.length;
+  }
+
+  String get _latestUpdateTime {
+    for (final item in _historyItems) {
+      if (item.displayTime != null) {
+        return item.displayTime!.split(',').first;
+      }
+    }
+    return 'None';
   }
 
   @override
@@ -246,7 +256,7 @@ class _AllHistoryScreenState extends State<AllHistoryScreen> {
           ),
           _buildKpiCard(
             title: 'Latest Update',
-            value: _historyItems.isNotEmpty ? _historyItems.first.formattedDate.split(',').first : 'None',
+            value: _latestUpdateTime,
             subtitle: _historyItems.isNotEmpty ? _historyItems.first.userName : 'No records',
             icon: Icons.access_time_filled_rounded,
             color: const Color(0xFF8B5CF6),
@@ -596,21 +606,23 @@ class _AllHistoryScreenState extends State<AllHistoryScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 1),
-                    Row(
-                      children: [
-                        const Icon(Icons.access_time_rounded, size: 12, color: Color(0xFF94A3B8)),
-                        const SizedBox(width: 4),
-                        Text(
-                          item.formattedDate.isNotEmpty ? item.formattedDate : item.createdAt,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
+                    if (item.displayTime != null) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time_rounded, size: 12, color: Color(0xFF94A3B8)),
+                          const SizedBox(width: 4),
+                          Text(
+                            item.displayTime!,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

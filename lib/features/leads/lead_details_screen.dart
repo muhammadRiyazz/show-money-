@@ -474,10 +474,18 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                                             ),
                                           ],
                                         ),
-                                        Text(
-                                          item.createdAt,
-                                          style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
-                                        ),
+                                        if (item.displayTime != null)
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(Icons.access_time_rounded, size: 12, color: Color(0xFF94A3B8)),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                item.displayTime!,
+                                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF64748B)),
+                                              ),
+                                            ],
+                                          ),
                                       ],
                                     ),
                                     const SizedBox(height: 8),
