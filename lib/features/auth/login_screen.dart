@@ -110,51 +110,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Brand Icon & Badge
+                    // Brand Icon & Logo
                     Center(
-                      child: Container(
-                        height: 72,
-                        width: 72,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [AppColors.accent, AppColors.primary],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.3),
-                              blurRadius: 14,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.table_chart_rounded,
-                          size: 36,
-                          color: Colors.white,
-                        ),
+                      child: Image.asset(
+                        'assets/logo/logo_full_blue.png',
+                        height: 64,
+                        fit: BoxFit.contain,
                       ),
                     ),
-                    const SizedBox(height: 24),
-
+                    const SizedBox(height: 12),
                     const Text(
-                      'Agency Head',
+                      'Funds & Leads Management Platform',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Student Agency Management Platform',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13.5,
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
@@ -298,7 +267,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             )
                           : const Text(
-                              'Sign In to Agency App',
+                              'Sign In to Danada Funds',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w800,
@@ -310,7 +279,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     // Version & PWA note
                     const Center(
                       child: Text(
-                        'Agency Head v1.0 • Web App & Desktop Ready',
+                        'Danada Funds v1.0 • Web App & Desktop Ready',
                         style: TextStyle(
                           fontSize: 11.5,
                           color: Color(0xFF94A3B8),

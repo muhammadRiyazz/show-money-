@@ -12,13 +12,13 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Agency Head">
+  <meta name="apple-mobile-web-app-title" content="Danada Funds">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>Student Agency Manager</title>
+  <title>Danada Funds</title>
   <link rel="manifest" href="manifest.json">
 
   <style>
@@ -153,7 +153,41 @@
           window.pwaDeferredPrompt = null;
         });
       } else {
-        alert('To install this Web App on your computer:\n\n1. In Google Chrome or Microsoft Edge, look at the top address bar on the right.\n2. Click the "Install" or "App Available" icon (a computer monitor with a down arrow).\n3. Click "Install" to place Agency Head on your Desktop and Start menu.');
+        alert('To install this Web App on your computer:\n\n1. In Google Chrome or Microsoft Edge, look at the top address bar on the right.\n2. Click the "Install" or "App Available" icon (a computer monitor with a down arrow).\n3. Click "Install" to place Danada Funds on your Desktop and Start menu.');
+      }
+    };
+
+    // Universal File Blob Downloader for Web
+    window.downloadFileBlob = function(filename, content, mimeType) {
+      try {
+        const blob = new Blob([content], { type: mimeType || 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (err) {
+        console.error('Download error:', err);
+      }
+    };
+
+    // Printable HTML Report / PDF generator for Web
+    window.printHtmlReport = function(htmlContent, title) {
+      try {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(htmlContent);
+          printWindow.document.close();
+          printWindow.focus();
+          setTimeout(() => {
+            printWindow.print();
+          }, 400);
+        }
+      } catch (err) {
+        console.error('Print error:', err);
       }
     };
 
@@ -169,12 +203,10 @@
 <body>
   <div id="app-loading">
     <div class="brand-icon">
-      <svg viewBox="0 0 24 24">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-      </svg>
+      <img src="assets/logo/logo_icon_white.png" alt="Danada Loans Logo" style="width: 64px; height: 64px; object-fit: contain;">
     </div>
-    <h1 class="brand-title">Student Agency Manager</h1>
-    <div class="brand-subtitle">Agency Head Enterprise App</div>
+    <h1 class="brand-title">Danada Funds</h1>
+    <div class="brand-subtitle">Funds & Leads Management App</div>
     <div class="loading-bar"></div>
   </div>
 

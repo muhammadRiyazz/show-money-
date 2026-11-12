@@ -182,7 +182,7 @@ class _ExecutiveDetailsScreenState extends State<ExecutiveDetailsScreen> {
                               ),
                               const SizedBox(height: 6),
                               const Text(
-                                'This executive is synced with Agency Head sheets. Any leads assigned to them appear directly in their active queue.',
+                                'This executive is synced with Danada Funds sheets. Any leads assigned to them appear directly in their active queue.',
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: AppColors.textSecondary,

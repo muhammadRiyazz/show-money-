@@ -1,12 +1,12 @@
 {
-    "name": "Student Agency Manager",
-    "short_name": "Agency Head",
+    "name": "Danada Funds",
+    "short_name": "Danada Funds",
     "start_url": "./",
     "scope": "./",
     "display": "standalone",
     "background_color": "#F8FAFC",
     "theme_color": "#1E3A8A",
-    "description": "Student Agency Management Platform for Managers, Office Executives, and Field Executives.",
+    "description": "Danada Funds - Financial & Leads Management Platform.",
     "orientation": "any",
     "prefer_related_applications": false,
     "categories": [

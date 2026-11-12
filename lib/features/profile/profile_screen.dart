@@ -85,7 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (name.isNotEmpty) return name;
 
     final groupId = int.tryParse(_user!['group_id']?.toString() ?? '0') ?? 0;
-    if (groupId == 6 || groupId == 1) return 'Agency Head / Manager';
+    if (groupId == 6 || groupId == 1) return 'Danada Funds / Manager';
     if (groupId == 5) return 'Office Executive';
     if (groupId == 4) return 'Field Executive';
     if (groupId == 2) return 'Accounts Staff';
@@ -263,7 +263,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               OutlinedButton.icon(
                 onPressed: _handleLogout,
                 icon: const Icon(Icons.logout_rounded),
-                label: const Text('Sign Out of Agency Head'),
+                label: const Text('Sign Out of Danada Funds'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.error,
                   side: const BorderSide(color: Color(0xFFFCA5A5)),

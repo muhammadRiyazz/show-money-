@@ -139,6 +139,13 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
       appBar: AppBar(
         title: Row(
           children: [
+            Image.asset(
+              'assets/logo/logo_icon_blue.png',
+              width: 26,
+              height: 26,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 10),
             const Text(
               'My Sheets',
               style: TextStyle(
@@ -172,6 +179,12 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
           // Manager Access Control / Mode Toggle Chip
           if (isManager) ...[
             _buildManagerSystemModeChip(context, isInactive),
+            const SizedBox(width: 4),
+            IconButton(
+              tooltip: 'Backup & Export All Data',
+              icon: const Icon(Icons.cloud_download_rounded, color: AppColors.primary),
+              onPressed: () => context.push('/backup'),
+            ),
             const SizedBox(width: 4),
           ],
           IconButton(

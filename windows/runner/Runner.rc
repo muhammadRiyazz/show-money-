@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "Student Agency Manager" "\0"
-            VALUE "FileDescription", "Student Agency Manager" "\0"
+            VALUE "CompanyName", "Danada Funds" "\0"
+            VALUE "FileDescription", "Danada Funds" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "agency_head" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 Student Agency Manager. All rights reserved." "\0"
-            VALUE "OriginalFilename", "agency_head.exe" "\0"
-            VALUE "ProductName", "Student Agency Manager" "\0"
+            VALUE "InternalName", "danada_funds" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Danada Funds. All rights reserved." "\0"
+            VALUE "OriginalFilename", "danada_funds.exe" "\0"
+            VALUE "ProductName", "Danada Funds" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

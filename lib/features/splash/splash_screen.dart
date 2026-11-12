@@ -85,57 +85,30 @@ class _SplashScreenState extends State<SplashScreen>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 80,
-                            height: 80,
+                            width: 96,
+                            height: 96,
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [AppColors.accent, Colors.white],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(22),
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.3),
-                                  blurRadius: 20,
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 24,
                                   offset: const Offset(0, 10),
                                 ),
                               ],
                             ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.table_chart_rounded,
-                                size: 44,
-                                color: AppColors.primaryDark,
-                              ),
+                            child: Image.asset(
+                              'assets/logo/logo_icon_blue.png',
+                              fit: BoxFit.contain,
                             ),
                           ),
                           const SizedBox(height: 24),
-                          const Text(
-                            'Agency Head',
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Text(
-                              'STUDENT AGENCY MANAGER',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
+                          Image.asset(
+                            'assets/logo/logo_full_white.png',
+                            width: 270,
+                            fit: BoxFit.contain,
                           ),
                         ],
                       ),

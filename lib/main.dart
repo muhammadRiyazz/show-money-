@@ -12,7 +12,7 @@ class AgencyHeadApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Student Agency Manager',
+      title: 'Danada Funds',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       routerConfig: AppRouter.router,

@@ -2574,12 +2574,18 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     icon: const Icon(Icons.refresh_rounded, color: AppColors.textPrimary),
                     onPressed: _fetchSheetData,
                   ),
-                  if (_isManager)
+                  if (_isManager) ...[
+                    IconButton(
+                      tooltip: 'Backup / Export Sheet Data',
+                      icon: const Icon(Icons.cloud_download_rounded, color: AppColors.primary),
+                      onPressed: () => context.push('/backup?sheetId=${widget.sheetId}'),
+                    ),
                     IconButton(
                       tooltip: 'Audit / Edit History',
                       icon: const Icon(Icons.history_rounded, color: AppColors.textPrimary),
                       onPressed: () => _showEditHistoryDialog(),
                     ),
+                  ],
                   if (_isManager) ...[
                     // Manager: Add Lead to Sheet (POST api/add_row)
                     Padding(
@@ -2655,12 +2661,23 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       icon: const Icon(Icons.more_vert_rounded, color: AppColors.textPrimary, size: 22),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       onSelected: (val) {
+                        if (val == 'backup') context.push('/backup?sheetId=${widget.sheetId}');
                         if (val == 'history') _showEditHistoryDialog();
                         if (val == 'add_lead') _showAddLeadDialog();
                         if (val == 'assign_staff') _showAssignToStaffDialog();
                       },
                       itemBuilder: (ctx) => [
-                        if (_isManager)
+                        if (_isManager) ...[
+                          const PopupMenuItem(
+                            value: 'backup',
+                            child: Row(
+                              children: [
+                                Icon(Icons.cloud_download_rounded, size: 18, color: AppColors.primary),
+                                SizedBox(width: 10),
+                                Text('Backup / Export', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                              ],
+                            ),
+                          ),
                           const PopupMenuItem(
                             value: 'history',
                             child: Row(
@@ -2671,6 +2688,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                               ],
                             ),
                           ),
+                        ],
                         if (_isManager) ...[
                           const PopupMenuItem(
                             value: 'add_lead',

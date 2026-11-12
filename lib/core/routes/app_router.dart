@@ -8,6 +8,7 @@ import 'package:agency_head/features/leads/create_lead_screen.dart';
 import 'package:agency_head/features/sheets/sheets_list_screen.dart';
 import 'package:agency_head/features/sheets/spreadsheet_screen.dart';
 import 'package:agency_head/features/sheets/create_sheet_screen.dart';
+import 'package:agency_head/features/sheets/backup_export_screen.dart';
 import 'package:agency_head/features/executives/executive_list_screen.dart';
 import 'package:agency_head/features/executives/executive_details_screen.dart';
 import 'package:agency_head/features/executives/create_executive_screen.dart';
@@ -45,6 +46,13 @@ class AppRouter {
           GoRoute(
             path: '/history',
             builder: (context, state) => const AllHistoryScreen(),
+          ),
+          GoRoute(
+            path: '/backup',
+            builder: (context, state) {
+              final sheetId = state.uri.queryParameters['sheetId'];
+              return BackupExportScreen(preselectedSheetId: sheetId);
+            },
           ),
           GoRoute(
             path: '/profile',

@@ -44,7 +44,8 @@ class _MainWrapperState extends State<MainWrapper> {
     if (location.startsWith('/sheets') || location == '/') return 0;
     if (location.startsWith('/executives')) return _isManager ? 1 : 0;
     if (location.startsWith('/history')) return _isManager ? 2 : 0;
-    if (location.startsWith('/profile')) return _isManager ? 3 : 1;
+    if (location.startsWith('/backup')) return _isManager ? 3 : 0;
+    if (location.startsWith('/profile')) return _isManager ? 4 : 1;
     return 0;
   }
 
@@ -61,6 +62,9 @@ class _MainWrapperState extends State<MainWrapper> {
           context.go('/history');
           break;
         case 3:
+          context.go('/backup');
+          break;
+        case 4:
           context.go('/profile');
           break;
       }
@@ -103,7 +107,9 @@ class _MainWrapperState extends State<MainWrapper> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirm Logout'),
-        content: const Text('Are you sure you want to sign out from Agency Head?'),
+        content: const Text(
+          'Are you sure you want to sign out from Danada Funds?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -177,7 +183,10 @@ class _MainWrapperState extends State<MainWrapper> {
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12.0,
+                vertical: 8.0,
+              ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: BottomNavigationBar(
@@ -192,7 +201,9 @@ class _MainWrapperState extends State<MainWrapper> {
                   type: BottomNavigationBarType.fixed,
                   selectedFontSize: 12,
                   unselectedFontSize: 12,
-                  selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
+                  selectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                  ),
                   items: isManager
                       ? [
                           BottomNavigationBarItem(
@@ -207,8 +218,17 @@ class _MainWrapperState extends State<MainWrapper> {
                           ),
                           BottomNavigationBarItem(
                             icon: const Icon(Icons.history_rounded),
-                            activeIcon: const Icon(Icons.manage_history_rounded),
+                            activeIcon: const Icon(
+                              Icons.manage_history_rounded,
+                            ),
                             label: 'History',
+                          ),
+                          BottomNavigationBarItem(
+                            icon: const Icon(Icons.cloud_download_outlined),
+                            activeIcon: const Icon(
+                              Icons.cloud_download_rounded,
+                            ),
+                            label: 'Backup',
                           ),
                           BottomNavigationBarItem(
                             icon: const Icon(Icons.person_outline),
@@ -249,10 +269,7 @@ class _MainWrapperState extends State<MainWrapper> {
       decoration: BoxDecoration(
         color: Colors.white,
         border: const Border(
-          right: BorderSide(
-            color: Color(0xFFE2E8F0),
-            width: 1.2,
-          ),
+          right: BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
         ),
         boxShadow: [
           BoxShadow(
@@ -273,27 +290,22 @@ class _MainWrapperState extends State<MainWrapper> {
                 Container(
                   width: 44,
                   height: 44,
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.accent, AppColors.primary],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.28),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.table_chart_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
+                  child: Image.asset(
+                    'assets/logo/logo_icon_blue.png',
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -302,9 +314,9 @@ class _MainWrapperState extends State<MainWrapper> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Agency Head',
+                        'Danada loans',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 17.5,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
                           letterSpacing: -0.2,
@@ -322,13 +334,16 @@ class _MainWrapperState extends State<MainWrapper> {
                             ),
                           ),
                           const SizedBox(width: 5),
-                          const Text(
-                            'STUDENT AGENCY',
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textSecondary,
-                              letterSpacing: 0.6,
+                          const Expanded(
+                            child: Text(
+                              'FINANCIAL GROWTH',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textSecondary,
+                                letterSpacing: 0.5,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -355,11 +370,7 @@ class _MainWrapperState extends State<MainWrapper> {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.verified_user_rounded,
-                    size: 16,
-                    color: roleColor,
-                  ),
+                  Icon(Icons.verified_user_rounded, size: 16, color: roleColor),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -426,15 +437,24 @@ class _MainWrapperState extends State<MainWrapper> {
                     activeIcon: Icons.manage_history_rounded,
                     onTap: () => _onItemTapped(2, context),
                   ),
+                  const SizedBox(height: 4),
+                  _buildSidebarItem(
+                    index: 3,
+                    selectedIndex: selectedIndex,
+                    title: 'Backup & Export',
+                    icon: Icons.cloud_download_outlined,
+                    activeIcon: Icons.cloud_download_rounded,
+                    onTap: () => _onItemTapped(3, context),
+                  ),
                 ],
                 const SizedBox(height: 4),
                 _buildSidebarItem(
-                  index: isManager ? 3 : 1,
+                  index: isManager ? 4 : 1,
                   selectedIndex: selectedIndex,
                   title: 'Profile & Account',
                   icon: Icons.person_outline_rounded,
                   activeIcon: Icons.person_rounded,
-                  onTap: () => _onItemTapped(isManager ? 3 : 1, context),
+                  onTap: () => _onItemTapped(isManager ? 4 : 1, context),
                 ),
               ],
             ),
@@ -456,7 +476,9 @@ class _MainWrapperState extends State<MainWrapper> {
                   radius: 19,
                   backgroundColor: AppColors.primary.withValues(alpha: 0.12),
                   child: Text(
-                    userName.isNotEmpty ? userName.substring(0, 1).toUpperCase() : 'U',
+                    userName.isNotEmpty
+                        ? userName.substring(0, 1).toUpperCase()
+                        : 'U',
                     style: const TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w800,
@@ -527,10 +549,14 @@ class _MainWrapperState extends State<MainWrapper> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : Colors.transparent,
+            color: isSelected
+                ? AppColors.primary.withValues(alpha: 0.1)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? AppColors.primary.withValues(alpha: 0.25) : Colors.transparent,
+              color: isSelected
+                  ? AppColors.primary.withValues(alpha: 0.25)
+                  : Colors.transparent,
               width: 1,
             ),
           ),
@@ -548,7 +574,9 @@ class _MainWrapperState extends State<MainWrapper> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -585,10 +613,14 @@ class _MainWrapperState extends State<MainWrapper> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isInactive ? const Color(0xFFFEF3C7) : const Color(0xFFF0FDF4),
+                color: isInactive
+                    ? const Color(0xFFFEF3C7)
+                    : const Color(0xFFF0FDF4),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isInactive ? const Color(0xFFFDE68A) : const Color(0xFFBBF7D0),
+                  color: isInactive
+                      ? const Color(0xFFFDE68A)
+                      : const Color(0xFFBBF7D0),
                   width: 1.2,
                 ),
               ),
@@ -601,9 +633,13 @@ class _MainWrapperState extends State<MainWrapper> {
                       Row(
                         children: [
                           Icon(
-                            isInactive ? Icons.visibility_off_rounded : Icons.shield_rounded,
+                            isInactive
+                                ? Icons.visibility_off_rounded
+                                : Icons.shield_rounded,
                             size: 14,
-                            color: isInactive ? const Color(0xFFD97706) : const Color(0xFF16A34A),
+                            color: isInactive
+                                ? const Color(0xFFD97706)
+                                : const Color(0xFF16A34A),
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -612,15 +648,22 @@ class _MainWrapperState extends State<MainWrapper> {
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.6,
-                              color: isInactive ? const Color(0xFF92400E) : const Color(0xFF166534),
+                              color: isInactive
+                                  ? const Color(0xFF92400E)
+                                  : const Color(0xFF166534),
                             ),
                           ),
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: isInactive ? const Color(0xFFFDE68A) : const Color(0xFFDCFCE7),
+                          color: isInactive
+                              ? const Color(0xFFFDE68A)
+                              : const Color(0xFFDCFCE7),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -628,7 +671,9 @@ class _MainWrapperState extends State<MainWrapper> {
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
-                            color: isInactive ? const Color(0xFFB45309) : const Color(0xFF15803D),
+                            color: isInactive
+                                ? const Color(0xFFB45309)
+                                : const Color(0xFF15803D),
                           ),
                         ),
                       ),
@@ -636,11 +681,15 @@ class _MainWrapperState extends State<MainWrapper> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    isInactive ? 'Inactive Mode (Data Hidden)' : 'Active (Full Access Visible)',
+                    isInactive
+                        ? 'Inactive Mode (Data Hidden)'
+                        : 'Active (Full Access Visible)',
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w700,
-                      color: isInactive ? const Color(0xFF92400E) : const Color(0xFF14532D),
+                      color: isInactive
+                          ? const Color(0xFF92400E)
+                          : const Color(0xFF14532D),
                     ),
                   ),
                   Text(
@@ -649,7 +698,9 @@ class _MainWrapperState extends State<MainWrapper> {
                         : 'Staff can view workspace records.',
                     style: TextStyle(
                       fontSize: 10,
-                      color: isInactive ? const Color(0xFFB45309) : const Color(0xFF166534),
+                      color: isInactive
+                          ? const Color(0xFFB45309)
+                          : const Color(0xFF166534),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -659,26 +710,41 @@ class _MainWrapperState extends State<MainWrapper> {
                     child: ElevatedButton.icon(
                       onPressed: isLoading
                           ? null
-                          : () => _showSystemModeDialog(context, isCurrentlyInactive: isInactive),
+                          : () => _showSystemModeDialog(
+                              context,
+                              isCurrentlyInactive: isInactive,
+                            ),
                       icon: isLoading
                           ? const SizedBox(
                               width: 12,
                               height: 12,
-                              child: CircularProgressIndicator(strokeWidth: 1.8, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.8,
+                                color: Colors.white,
+                              ),
                             )
                           : Icon(
-                              isInactive ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                              isInactive
+                                  ? Icons.visibility_rounded
+                                  : Icons.visibility_off_rounded,
                               size: 13,
                             ),
                       label: Text(
                         isInactive ? 'Enable Access' : 'Disable Full Access',
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isInactive ? const Color(0xFF16A34A) : const Color(0xFFD97706),
+                        backgroundColor: isInactive
+                            ? const Color(0xFF16A34A)
+                            : const Color(0xFFD97706),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         elevation: 0,
                       ),
                     ),
@@ -695,7 +761,10 @@ class _MainWrapperState extends State<MainWrapper> {
     );
   }
 
-  Future<void> _showSystemModeDialog(BuildContext context, {required bool isCurrentlyInactive}) async {
+  Future<void> _showSystemModeDialog(
+    BuildContext context, {
+    required bool isCurrentlyInactive,
+  }) async {
     final willEnableInactive = !isCurrentlyInactive;
 
     final confirm = await showDialog<bool>(
@@ -705,15 +774,24 @@ class _MainWrapperState extends State<MainWrapper> {
         title: Row(
           children: [
             Icon(
-              willEnableInactive ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-              color: willEnableInactive ? const Color(0xFFD97706) : const Color(0xFF16A34A),
+              willEnableInactive
+                  ? Icons.visibility_off_rounded
+                  : Icons.visibility_rounded,
+              color: willEnableInactive
+                  ? const Color(0xFFD97706)
+                  : const Color(0xFF16A34A),
               size: 26,
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                willEnableInactive ? 'Disable Full Access?' : 'Enable Full Access?',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                willEnableInactive
+                    ? 'Disable Full Access?'
+                    : 'Enable Full Access?',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                ),
               ),
             ),
           ],
@@ -722,7 +800,11 @@ class _MainWrapperState extends State<MainWrapper> {
           willEnableInactive
               ? 'Are you sure you want to activate Inactive Mode?\n\nAll spreadsheet records, candidate leads, and dashboard metrics will be completely hidden for field executives and staff members.'
               : 'Are you sure you want to restore Full Access?\n\nAll spreadsheet records, candidate leads, and dashboard metrics will become visible to authorized staff members.',
-          style: const TextStyle(fontSize: 13.5, color: Color(0xFF475569), height: 1.45),
+          style: const TextStyle(
+            fontSize: 13.5,
+            color: Color(0xFF475569),
+            height: 1.45,
+          ),
         ),
         actions: [
           OutlinedButton(
@@ -730,32 +812,46 @@ class _MainWrapperState extends State<MainWrapper> {
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF64748B),
               side: const BorderSide(color: Color(0xFFCBD5E1)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: willEnableInactive ? const Color(0xFFD97706) : const Color(0xFF16A34A),
+              backgroundColor: willEnableInactive
+                  ? const Color(0xFFD97706)
+                  : const Color(0xFF16A34A),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(willEnableInactive ? 'Disable Access (Hide Data)' : 'Enable Access (Show Data)'),
+            child: Text(
+              willEnableInactive
+                  ? 'Disable Access (Hide Data)'
+                  : 'Enable Access (Show Data)',
+            ),
           ),
         ],
       ),
     );
 
     if (confirm == true && mounted) {
-      final success = await SystemModeService.instance.setMode(willEnableInactive);
+      final success = await SystemModeService.instance.setMode(
+        willEnableInactive,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 Icon(
-                  willEnableInactive ? Icons.visibility_off_rounded : Icons.check_circle_rounded,
+                  willEnableInactive
+                      ? Icons.visibility_off_rounded
+                      : Icons.check_circle_rounded,
                   color: Colors.white,
                   size: 18,
                 ),
@@ -764,14 +860,16 @@ class _MainWrapperState extends State<MainWrapper> {
                   child: Text(
                     success
                         ? (willEnableInactive
-                            ? 'System switched to Inactive Mode (Data Hidden)'
-                            : 'Full data access restored (Data Visible)')
+                              ? 'System switched to Inactive Mode (Data Hidden)'
+                              : 'Full data access restored (Data Visible)')
                         : 'Failed to update system mode.',
                   ),
                 ),
               ],
             ),
-            backgroundColor: willEnableInactive ? const Color(0xFFD97706) : const Color(0xFF16A34A),
+            backgroundColor: willEnableInactive
+                ? const Color(0xFFD97706)
+                : const Color(0xFF16A34A),
             duration: const Duration(seconds: 2),
           ),
         );

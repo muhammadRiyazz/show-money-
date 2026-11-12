@@ -18,7 +18,7 @@ class _CreateExecutiveScreenState extends State<CreateExecutiveScreen> {
   bool _isLoading = false;
 
   ExecutiveRole _selectedRole = ExecutiveRole.field;
-  
+
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -38,7 +38,7 @@ class _CreateExecutiveScreenState extends State<CreateExecutiveScreen> {
   Future<void> _saveExecutive() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      
+
       try {
         final groupId = _selectedRole == ExecutiveRole.field ? 4 : 5;
         final response = await ApiService.createStaff(
@@ -56,7 +56,9 @@ class _CreateExecutiveScreenState extends State<CreateExecutiveScreen> {
           context.pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Executive ${_nameController.text} added successfully!'),
+              content: Text(
+                'Executive ${_nameController.text} added successfully!',
+              ),
               backgroundColor: AppColors.success,
             ),
           );
@@ -108,18 +110,42 @@ class _CreateExecutiveScreenState extends State<CreateExecutiveScreen> {
                 const SizedBox(height: 28),
                 _buildSectionTitle('Personal Details'),
                 const SizedBox(height: 16),
-                _buildTextField('Full Name', Iconex.light.user, _nameController),
-                _buildTextField('Email Address', Iconex.light.mail, _emailController, TextInputType.emailAddress),
-                _buildTextField('Password', Iconex.light.lock, _passwordController, TextInputType.visiblePassword, true),
-                _buildTextField('Phone Number', Iconex.light.call, _phoneController, TextInputType.phone),
-                
+                _buildTextField(
+                  'Full Name',
+                  Iconex.light.user,
+                  _nameController,
+                ),
+                _buildTextField(
+                  'Email Address',
+                  Iconex.light.mail,
+                  _emailController,
+                  TextInputType.emailAddress,
+                ),
+                _buildTextField(
+                  'Password',
+                  Iconex.light.lock,
+                  _passwordController,
+                  TextInputType.visiblePassword,
+                  true,
+                ),
+                _buildTextField(
+                  'Phone Number',
+                  Iconex.light.call,
+                  _phoneController,
+                  TextInputType.phone,
+                ),
+
                 const SizedBox(height: 24),
                 _buildSectionTitle('Role & Assignment'),
                 const SizedBox(height: 16),
                 _buildRoleSelector(),
                 const SizedBox(height: 16),
-                _buildTextField('Region / Territory', Iconex.light.location, _regionController),
-                
+                _buildTextField(
+                  'Region / Territory',
+                  Iconex.light.location,
+                  _regionController,
+                ),
+
                 const SizedBox(height: 32),
                 SizedBox(
                   width: double.infinity,
@@ -134,9 +160,22 @@ class _CreateExecutiveScreenState extends State<CreateExecutiveScreen> {
                       ),
                       elevation: 0,
                     ),
-                    child: _isLoading 
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text('Create Executive', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Create Executive',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -172,12 +211,19 @@ class _CreateExecutiveScreenState extends State<CreateExecutiveScreen> {
               children: [
                 Text(
                   'New Team Member',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
                 ),
                 SizedBox(height: 4),
                 Text(
                   'Add a new Field or Office Executive to your agency.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -198,14 +244,21 @@ class _CreateExecutiveScreenState extends State<CreateExecutiveScreen> {
     );
   }
 
-  Widget _buildTextField(String label, IconData icon, TextEditingController controller, [TextInputType type = TextInputType.text, bool obscureText = false]) {
+  Widget _buildTextField(
+    String label,
+    IconData icon,
+    TextEditingController controller, [
+    TextInputType type = TextInputType.text,
+    bool obscureText = false,
+  ]) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: TextFormField(
         controller: controller,
         keyboardType: type,
         obscureText: obscureText,
-        validator: (value) => value == null || value.isEmpty ? 'This field is required' : null,
+        validator: (value) =>
+            value == null || value.isEmpty ? 'This field is required' : null,
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon, color: AppColors.primary),
@@ -255,13 +308,15 @@ class _CreateExecutiveScreenState extends State<CreateExecutiveScreen> {
           border: Border.all(
             color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
           ),
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.25),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            )
-          ] : [],
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
         ),
         child: Column(
           children: [

@@ -525,6 +525,24 @@ class ApiRow {
     return '';
   }
 
+  /// Aliases and helpers for export and display
+  String get leadPhone => phoneNumber;
+  String get leadCountry => country;
+
+  String get leadEmail {
+    for (var key in ['Email', 'email', 'Email Address', 'email_address', 'Mail', 'mail']) {
+      if (data.containsKey(key) && data[key].toString().trim().isNotEmpty) {
+        return data[key].toString().trim();
+      }
+    }
+    for (var entry in data.entries) {
+      if (entry.key.toLowerCase().contains('email') || entry.key.toLowerCase().contains('mail')) {
+        return entry.value.toString().trim();
+      }
+    }
+    return '';
+  }
+
   void setValue(ApiColumn col, String value) {
     data[col.columnKey] = value;
     data[col.columnName] = value;
