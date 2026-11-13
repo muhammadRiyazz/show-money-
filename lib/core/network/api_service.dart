@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:agency_head/core/services/device_info_service.dart';
 
 class ApiService {
   static const String baseUrl = 'https://tictechnologies.in/stage/showmoney/api';
@@ -332,23 +333,56 @@ class ApiService {
 
   /// 1. Unified Login (For Field Executives, Backend Staff, Accounts, Manager)
   /// Endpoint: POST api/login
-  static Future<Map<String, dynamic>> login(String email, String password) async {
+  /// Requires: email, password, platform ("android"|"ios"), device_id, device_name
+  static Future<Map<String, dynamic>> login(
+    String email,
+    String password, {
+    String? platform,
+    String? deviceId,
+    String? deviceName,
+  }) async {
     developer.log('API [Auth] Unified Login attempt for email: $email', name: 'ApiService.Auth');
-    return await _post('login', {'email': email, 'password': password});
+    final payload = await DeviceInfoService.buildLoginPayload(email: email, password: password);
+    if (platform != null) payload['platform'] = platform;
+    if (deviceId != null) payload['device_id'] = deviceId;
+    if (deviceName != null) payload['device_name'] = deviceName;
+    return await _post('login', payload);
   }
 
   /// 2. Manager Login (group_id = 6)
   /// Endpoint: POST api/manager_login
-  static Future<Map<String, dynamic>> managerLogin(String email, String password) async {
+  /// Requires: email, password, platform ("android"|"ios"), device_id, device_name
+  static Future<Map<String, dynamic>> managerLogin(
+    String email,
+    String password, {
+    String? platform,
+    String? deviceId,
+    String? deviceName,
+  }) async {
     developer.log('API [Auth] Manager Login attempt for email: $email', name: 'ApiService.Auth');
-    return await _post('manager_login', {'email': email, 'password': password});
+    final payload = await DeviceInfoService.buildLoginPayload(email: email, password: password);
+    if (platform != null) payload['platform'] = platform;
+    if (deviceId != null) payload['device_id'] = deviceId;
+    if (deviceName != null) payload['device_name'] = deviceName;
+    return await _post('manager_login', payload);
   }
 
   /// 3. Accounts Login (group_id = 2)
   /// Endpoint: POST api/accounts_login
-  static Future<Map<String, dynamic>> accountsLogin(String email, String password) async {
+  /// Requires: email, password, platform ("android"|"ios"), device_id, device_name
+  static Future<Map<String, dynamic>> accountsLogin(
+    String email,
+    String password, {
+    String? platform,
+    String? deviceId,
+    String? deviceName,
+  }) async {
     developer.log('API [Auth] Accounts Login attempt for email: $email', name: 'ApiService.Auth');
-    return await _post('accounts_login', {'email': email, 'password': password});
+    final payload = await DeviceInfoService.buildLoginPayload(email: email, password: password);
+    if (platform != null) payload['platform'] = platform;
+    if (deviceId != null) payload['device_id'] = deviceId;
+    if (deviceName != null) payload['device_name'] = deviceName;
+    return await _post('accounts_login', payload);
   }
 
   // ==========================================
