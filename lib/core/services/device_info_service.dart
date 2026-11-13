@@ -12,15 +12,30 @@ import 'package:shared_preferences/shared_preferences.dart';
 class DeviceInfoService {
   static const String _deviceIdKey = 'app_unique_device_id';
 
-  /// Returns "ios" or "android" as strictly required by backend API:
-  /// Must be sent as "android" or "ios"
+  /// Returns exact platform string based on runtime environment:
+  /// - Web -> "web"
+  /// - Windows -> "windows"
+  /// - Android -> "android"
+  /// - iOS -> "ios"
+  /// - macOS -> "macos"
   static String getPlatform() {
-    if (!kIsWeb) {
-      if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
-        return 'ios';
-      }
+    if (kIsWeb) {
+      return 'web';
     }
-    return 'android';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'android';
+      case TargetPlatform.iOS:
+        return 'ios';
+      case TargetPlatform.windows:
+        return 'windows';
+      case TargetPlatform.macOS:
+        return 'macos';
+      case TargetPlatform.linux:
+        return 'linux';
+      default:
+        return 'android';
+    }
   }
 
   /// Returns a persistent hardware/app installation unique ID.
