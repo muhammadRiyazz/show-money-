@@ -20,9 +20,7 @@ jobs:
           cache: true
 
       - name: Enable Windows Support
-        run: |
-          flutter config --enable-windows-desktop
-          flutter create --platforms=windows .
+        run: flutter config --enable-windows-desktop
 
       - name: Install Dependencies
         run: flutter pub get
