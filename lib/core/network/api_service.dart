@@ -92,6 +92,83 @@ class ApiService {
   }
 
   // ==========================================
+  // Dedicated Logging for Authentication (Login Request & Response)
+  // ==========================================
+  static void _logAuthRequest({
+    required String endpoint,
+    required Map<String, dynamic> payload,
+  }) {
+    final buffer = StringBuffer();
+    final url = '$baseUrl/$endpoint';
+    final maskedPassword = payload['password'] != null
+        ? '•••••••• (${payload['password'].toString().length} chars)'
+        : 'N/A';
+
+    buffer.writeln('\n🔐 ===================== [LOGIN REQUEST START] =====================');
+    buffer.writeln('📡 ACTION      : User Authentication');
+    buffer.writeln('🌐 URL         : $url');
+    buffer.writeln('🔌 ENDPOINT    : POST api/$endpoint');
+    buffer.writeln('👤 EMAIL       : ${payload['email']}');
+    buffer.writeln('🔒 PASSWORD    : $maskedPassword');
+    buffer.writeln('📱 PLATFORM    : ${payload['platform']}');
+    buffer.writeln('🆔 DEVICE ID   : ${payload['device_id']}');
+    buffer.writeln('💻 DEVICE NAME : ${payload['device_name']}');
+    buffer.writeln('🕒 TIMESTAMP   : ${DateTime.now().toIso8601String()}');
+    buffer.writeln('📦 FULL JSON PAYLOAD:');
+    try {
+      buffer.writeln(const JsonEncoder.withIndent('  ').convert(payload));
+    } catch (_) {
+      buffer.writeln(payload.toString());
+    }
+    buffer.writeln('====================================================================\n');
+
+    final text = buffer.toString();
+    developer.log(text, name: 'ApiService.Login.Request');
+    debugPrint(text);
+  }
+
+  static void _logAuthResponse({
+    required String endpoint,
+    required Map<String, dynamic> response,
+    int? durationMs,
+  }) {
+    final buffer = StringBuffer();
+    final status = response['status'] == true;
+    final icon = status ? '✅' : '❌';
+    final message = response['message']?.toString() ?? 'No message returned';
+
+    buffer.writeln('\n🔐 ===================== [LOGIN RESPONSE START] ====================');
+    buffer.writeln('$icon STATUS       : ${status ? 'SUCCESS' : 'FAILED / REJECTED'}');
+    buffer.writeln('🔌 ENDPOINT     : POST api/$endpoint');
+    if (durationMs != null) {
+      buffer.writeln('⏱️ DURATION     : ${durationMs}ms');
+    }
+    buffer.writeln('💬 MESSAGE      : $message');
+
+    // Extract user info if present
+    final user = response['data']?['user'] ?? response['data'] ?? response['user'];
+    if (user is Map) {
+      buffer.writeln('👤 USER ID      : ${user['id']}');
+      buffer.writeln('📛 USER NAME    : ${user['name']}');
+      buffer.writeln('👥 GROUP ID     : ${user['group_id']} (${user['group_name'] ?? 'Role'})');
+      buffer.writeln('📧 USER EMAIL   : ${user['email']}');
+      buffer.writeln('🔑 TOKEN        : ${user['token'] ?? response['data']?['token'] ?? response['token'] ?? 'None'}');
+    }
+
+    buffer.writeln('📦 FULL JSON RESPONSE:');
+    try {
+      buffer.writeln(const JsonEncoder.withIndent('  ').convert(response));
+    } catch (_) {
+      buffer.writeln(response.toString());
+    }
+    buffer.writeln('====================================================================\n');
+
+    final text = buffer.toString();
+    developer.log(text, name: 'ApiService.Login.Response');
+    debugPrint(text);
+  }
+
+  // ==========================================
   // Dedicated Logging for Fetch Sheets & Fetch Leads
   // ==========================================
   static void _logFetchSheetsRequest({
@@ -341,12 +418,28 @@ class ApiService {
     String? deviceId,
     String? deviceName,
   }) async {
-    developer.log('API [Auth] Unified Login attempt for email: $email', name: 'ApiService.Auth');
     final payload = await DeviceInfoService.buildLoginPayload(email: email, password: password);
     if (platform != null) payload['platform'] = platform;
     if (deviceId != null) payload['device_id'] = deviceId;
     if (deviceName != null) payload['device_name'] = deviceName;
-    return await _post('login', payload);
+
+    _logAuthRequest(endpoint: 'login', payload: payload);
+    final stopwatch = Stopwatch()..start();
+
+    try {
+      final response = await _post('login', payload);
+      stopwatch.stop();
+      _logAuthResponse(endpoint: 'login', response: response, durationMs: stopwatch.elapsedMilliseconds);
+      return response;
+    } catch (e) {
+      stopwatch.stop();
+      _logAuthResponse(
+        endpoint: 'login',
+        response: {'status': false, 'message': 'HTTP or network exception: $e'},
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+      rethrow;
+    }
   }
 
   /// 2. Manager Login (group_id = 6)
@@ -359,12 +452,28 @@ class ApiService {
     String? deviceId,
     String? deviceName,
   }) async {
-    developer.log('API [Auth] Manager Login attempt for email: $email', name: 'ApiService.Auth');
     final payload = await DeviceInfoService.buildLoginPayload(email: email, password: password);
     if (platform != null) payload['platform'] = platform;
     if (deviceId != null) payload['device_id'] = deviceId;
     if (deviceName != null) payload['device_name'] = deviceName;
-    return await _post('manager_login', payload);
+
+    _logAuthRequest(endpoint: 'manager_login', payload: payload);
+    final stopwatch = Stopwatch()..start();
+
+    try {
+      final response = await _post('manager_login', payload);
+      stopwatch.stop();
+      _logAuthResponse(endpoint: 'manager_login', response: response, durationMs: stopwatch.elapsedMilliseconds);
+      return response;
+    } catch (e) {
+      stopwatch.stop();
+      _logAuthResponse(
+        endpoint: 'manager_login',
+        response: {'status': false, 'message': 'HTTP or network exception: $e'},
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+      rethrow;
+    }
   }
 
   /// 3. Accounts Login (group_id = 2)
@@ -377,12 +486,28 @@ class ApiService {
     String? deviceId,
     String? deviceName,
   }) async {
-    developer.log('API [Auth] Accounts Login attempt for email: $email', name: 'ApiService.Auth');
     final payload = await DeviceInfoService.buildLoginPayload(email: email, password: password);
     if (platform != null) payload['platform'] = platform;
     if (deviceId != null) payload['device_id'] = deviceId;
     if (deviceName != null) payload['device_name'] = deviceName;
-    return await _post('accounts_login', payload);
+
+    _logAuthRequest(endpoint: 'accounts_login', payload: payload);
+    final stopwatch = Stopwatch()..start();
+
+    try {
+      final response = await _post('accounts_login', payload);
+      stopwatch.stop();
+      _logAuthResponse(endpoint: 'accounts_login', response: response, durationMs: stopwatch.elapsedMilliseconds);
+      return response;
+    } catch (e) {
+      stopwatch.stop();
+      _logAuthResponse(
+        endpoint: 'accounts_login',
+        response: {'status': false, 'message': 'HTTP or network exception: $e'},
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+      rethrow;
+    }
   }
 
   // ==========================================
