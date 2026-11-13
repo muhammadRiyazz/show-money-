@@ -50,7 +50,10 @@ class _MainWrapperState extends State<MainWrapper> {
       if (location.startsWith('/profile')) return 5;
       return 0;
     } else {
-      if (location.startsWith('/sheets') || location == '/' || location.startsWith('/dashboard')) return 0;
+      if (location.startsWith('/sheets') ||
+          location == '/' ||
+          location.startsWith('/dashboard'))
+        return 0;
       if (location.startsWith('/profile')) return 1;
       return 0;
     }
@@ -233,16 +236,12 @@ class _MainWrapperState extends State<MainWrapper> {
                           ),
                           const BottomNavigationBarItem(
                             icon: Icon(Icons.history_rounded),
-                            activeIcon: Icon(
-                              Icons.manage_history_rounded,
-                            ),
+                            activeIcon: Icon(Icons.manage_history_rounded),
                             label: 'History',
                           ),
                           const BottomNavigationBarItem(
                             icon: Icon(Icons.cloud_download_outlined),
-                            activeIcon: Icon(
-                              Icons.cloud_download_rounded,
-                            ),
+                            activeIcon: Icon(Icons.cloud_download_rounded),
                             label: 'Backup',
                           ),
                           const BottomNavigationBarItem(

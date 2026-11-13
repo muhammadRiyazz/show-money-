@@ -38,3 +38,4 @@ Write-Host "========================================================" -Foregroun
 if (Test-Path $buildDir) {
     explorer.exe $buildDir
 }
+
