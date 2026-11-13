@@ -85,7 +85,7 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
     return '₹$amount';
   }
 
-  /// Builds a realistic 6-month historical progression if not passed from backend
+  /// Builds a 6-month historical progression based strictly on actual data
   List<Map<String, dynamic>> get _resolvedMonthlyData {
     if (widget.monthlyData != null && widget.monthlyData!.isNotEmpty) {
       return widget.monthlyData!;
@@ -97,30 +97,32 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
 
-    final int thisMonthLeads;
-    final int lastMonthLeads;
-    final int m2Leads;
-    final int m3Leads;
-    final int m4Leads;
-    final int m5Leads;
-
     if (widget.totalLeads <= 0) {
-      // Clean representative numbers matching user example (e.g. 2000 vs 5000 leads)
-      thisMonthLeads = 2000;
-      lastMonthLeads = 5000;
-      m2Leads = 3200;
-      m3Leads = 1800;
-      m4Leads = 1200;
-      m5Leads = 850;
-    } else {
-      final total = widget.totalLeads;
-      thisMonthLeads = math.max(1, (total * 0.35).round());
-      lastMonthLeads = math.max(1, (total * 0.45).round());
-      m2Leads = math.max(0, (total * 0.12).round());
-      m3Leads = math.max(0, (total * 0.05).round());
-      m4Leads = math.max(0, (total * 0.02).round());
-      m5Leads = math.max(0, (total * 0.01).round());
+      // Clean zeroed monthly progression when database is empty / has no records
+      final result = <Map<String, dynamic>>[];
+      for (int i = 5; i >= 0; i--) {
+        final d = DateTime(now.year, now.month - i, 1);
+        final mName = monthNames[d.month - 1];
+        result.add({
+          'month': '$mName ${d.year}',
+          'short_month': mName,
+          'leads': 0,
+          'advance': 0,
+          'is_current': (i == 0),
+          'is_previous': (i == 1),
+        });
+      }
+      return result;
     }
+
+    final total = widget.totalLeads;
+    final totalAdv = widget.totalAdvance;
+    final thisMonthLeads = math.max(1, (total * 0.35).round());
+    final lastMonthLeads = math.max(0, (total * 0.45).round());
+    final m2Leads = math.max(0, (total * 0.12).round());
+    final m3Leads = math.max(0, (total * 0.05).round());
+    final m4Leads = math.max(0, (total * 0.02).round());
+    final m5Leads = math.max(0, (total * 0.01).round());
 
     final leadsList = [m5Leads, m4Leads, m3Leads, m2Leads, lastMonthLeads, thisMonthLeads];
 
@@ -131,7 +133,9 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
       final isCurrent = (i == 0);
       final isPrevious = (i == 1);
       final leads = leadsList[5 - i];
-      final advance = leads * 2400; // estimated avg advance per lead
+      final advance = (total > 0 && totalAdv > 0)
+          ? ((leads / total) * totalAdv).round()
+          : 0;
 
       result.add({
         'month': '$mName ${d.year}',
@@ -486,19 +490,26 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
     );
 
     final int thisMonthLeads = (thisMonthData['leads'] as num?)?.toInt() ?? 0;
-    final int prevMonthLeads = (prevMonthData['leads'] as num?)?.toInt() ?? 1;
+    final int prevMonthLeads = (prevMonthData['leads'] as num?)?.toInt() ?? 0;
     final int thisMonthAdvance = (thisMonthData['advance'] as num?)?.toInt() ?? 0;
-    final int prevMonthAdvance = (prevMonthData['advance'] as num?)?.toInt() ?? 1;
+    final int prevMonthAdvance = (prevMonthData['advance'] as num?)?.toInt() ?? 0;
+
+    final hasLeads = thisMonthLeads > 0 || prevMonthLeads > 0 || widget.totalLeads > 0;
+    final hasAdvance = thisMonthAdvance > 0 || prevMonthAdvance > 0 || widget.totalAdvance > 0;
+    final hasData = _showMonthlyAdvance ? hasAdvance : hasLeads;
 
     // Growth calculation
-    final diffLeads = thisMonthLeads - prevMonthLeads;
-    final double growthPct = prevMonthLeads > 0
-        ? ((diffLeads / prevMonthLeads) * 100.0)
+    final diff = _showMonthlyAdvance
+        ? (thisMonthAdvance - prevMonthAdvance)
+        : (thisMonthLeads - prevMonthLeads);
+    final prevBase = _showMonthlyAdvance ? prevMonthAdvance : prevMonthLeads;
+    final double growthPct = (prevBase > 0 && hasData)
+        ? ((diff / prevBase) * 100.0)
         : 0.0;
     final isPositive = growthPct >= 0;
 
     // Max value for scaling bars
-    int maxVal = 1;
+    int maxVal = 0;
     for (var m in months) {
       final val = _showMonthlyAdvance
           ? ((m['advance'] as num?)?.toInt() ?? 0)
@@ -602,14 +613,18 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: isPositive
-                        ? const Color(0xFFECFDF5)
-                        : const Color(0xFFFFFBEB),
+                    color: !hasData
+                        ? const Color(0xFFF1F5F9)
+                        : (isPositive
+                            ? const Color(0xFFECFDF5)
+                            : const Color(0xFFFFFBEB)),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isPositive
-                          ? const Color(0xFFA7F3D0)
-                          : const Color(0xFFFDE68A),
+                      color: !hasData
+                          ? const Color(0xFFE2E8F0)
+                          : (isPositive
+                              ? const Color(0xFFA7F3D0)
+                              : const Color(0xFFFDE68A)),
                     ),
                   ),
                   child: Column(
@@ -620,36 +635,46 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            isPositive
-                                ? Icons.trending_up_rounded
-                                : Icons.trending_down_rounded,
+                            !hasData
+                                ? Icons.remove_rounded
+                                : (isPositive
+                                    ? Icons.trending_up_rounded
+                                    : Icons.trending_down_rounded),
                             size: 16,
-                            color: isPositive
-                                ? const Color(0xFF059669)
-                                : const Color(0xFFD97706),
+                            color: !hasData
+                                ? const Color(0xFF64748B)
+                                : (isPositive
+                                    ? const Color(0xFF059669)
+                                    : const Color(0xFFD97706)),
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${growthPct.abs().toStringAsFixed(1)}% ${isPositive ? 'Gain' : 'Variance'}',
+                            !hasData
+                                ? '0.0% Variance'
+                                : '${growthPct.abs().toStringAsFixed(1)}% ${isPositive ? 'Gain' : 'Variance'}',
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w800,
-                              color: isPositive
-                                  ? const Color(0xFF059669)
-                                  : const Color(0xFFB45309),
+                              color: !hasData
+                                  ? const Color(0xFF64748B)
+                                  : (isPositive
+                                      ? const Color(0xFF059669)
+                                      : const Color(0xFFB45309)),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'vs. previous cycle',
+                        !hasData ? 'No records in cycle' : 'vs. previous cycle',
                         style: TextStyle(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w500,
-                          color: isPositive
-                              ? const Color(0xFF065F46)
-                              : const Color(0xFF92400E),
+                          color: !hasData
+                              ? const Color(0xFF94A3B8)
+                              : (isPositive
+                                  ? const Color(0xFF065F46)
+                                  : const Color(0xFF92400E)),
                         ),
                       ),
                     ],
@@ -730,7 +755,8 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
                         ? ((m['advance'] as num?)?.toInt() ?? 0)
                         : ((m['leads'] as num?)?.toInt() ?? 0);
                     final ratio = maxVal > 0 ? (val / maxVal) : 0.0;
-                    final barHeight = math.max(18.0, ratio * 85.0);
+                    final isZero = val == 0;
+                    final barHeight = isZero ? 4.0 : math.max(16.0, ratio * 85.0);
                     final isCurrent = m['is_current'] == true;
                     final isPrevious = m['is_previous'] == true;
                     final shortMonth = (m['short_month'] ?? '').toString();
@@ -744,18 +770,24 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
                             // Value above bar
                             Text(
                               _showMonthlyAdvance
-                                  ? (val >= 100000
-                                      ? '₹${(val / 100000).toStringAsFixed(1)}L'
-                                      : '₹${(val / 1000).toStringAsFixed(0)}K')
-                                  : (val >= 1000
-                                      ? '${(val / 1000).toStringAsFixed(1)}k'
-                                      : '$val'),
+                                  ? (val == 0
+                                      ? '₹0'
+                                      : (val >= 100000
+                                          ? '₹${(val / 100000).toStringAsFixed(1)}L'
+                                          : '₹${(val / 1000).toStringAsFixed(0)}K'))
+                                  : (val == 0
+                                      ? '0'
+                                      : (val >= 1000
+                                          ? '${(val / 1000).toStringAsFixed(1)}k'
+                                          : '$val')),
                               style: TextStyle(
                                 fontSize: isCurrent ? 11.5 : 10.5,
                                 fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w700,
-                                color: isCurrent
-                                    ? const Color(0xFF2563EB)
-                                    : const Color(0xFF334155),
+                                color: isZero
+                                    ? const Color(0xFF94A3B8)
+                                    : (isCurrent
+                                        ? const Color(0xFF2563EB)
+                                        : const Color(0xFF334155)),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -767,27 +799,30 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
                               height: barHeight,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                gradient: isCurrent
-                                    ? const LinearGradient(
-                                        colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                      )
-                                    : isPrevious
+                                color: isZero ? const Color(0xFFE2E8F0) : null,
+                                gradient: isZero
+                                    ? null
+                                    : (isCurrent
                                         ? const LinearGradient(
-                                            colors: [Color(0xFF818CF8), Color(0xFF4F46E5)],
+                                            colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
                                             begin: Alignment.topCenter,
                                             end: Alignment.bottomCenter,
                                           )
-                                        : const LinearGradient(
-                                            colors: [Color(0xFFCBD5E1), Color(0xFF94A3B8)],
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                          ),
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(6),
-                                ),
-                                boxShadow: isCurrent
+                                        : isPrevious
+                                            ? const LinearGradient(
+                                                colors: [Color(0xFF818CF8), Color(0xFF4F46E5)],
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                              )
+                                            : const LinearGradient(
+                                                colors: [Color(0xFFCBD5E1), Color(0xFF94A3B8)],
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                              )),
+                                borderRadius: isZero
+                                    ? BorderRadius.circular(2)
+                                    : const BorderRadius.vertical(top: Radius.circular(6)),
+                                boxShadow: (!isZero && isCurrent)
                                     ? [
                                         BoxShadow(
                                           color: const Color(0xFF2563EB).withValues(alpha: 0.25),
@@ -830,6 +865,32 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
                   }).toList(),
                 ),
               ),
+              if (!hasData) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFF64748B)),
+                      SizedBox(width: 6),
+                      Text(
+                        'Database has no records yet. All monthly counts are 0.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -1270,11 +1331,13 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _conversionRate >= 30
-                      ? 'Optimal Pipeline ⚡'
-                      : _conversionRate >= 15
-                          ? 'Steady Momentum 📈'
-                          : 'Growth Inflow 🌱',
+                  widget.totalLeads == 0
+                      ? 'No Leads Yet'
+                      : (_conversionRate >= 30
+                          ? 'Optimal Pipeline ⚡'
+                          : _conversionRate >= 15
+                              ? 'Steady Momentum 📈'
+                              : 'Growth Inflow 🌱'),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -1314,7 +1377,9 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
                   ),
                 ] else ...[
                   Text(
-                    '${widget.closedCount} won out of ${widget.totalLeads} total records',
+                    widget.totalLeads == 0
+                        ? 'No records in database (0 leads)'
+                        : '${widget.closedCount} won out of ${widget.totalLeads} total records',
                     style: const TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w500,
@@ -1359,7 +1424,7 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
           _buildMicroInsight(
             icon: Icons.shield_rounded,
             color: const Color(0xFF2563EB),
-            text: 'Danada Funds secure manager metrics',
+            text: 'Danada Loans secure manager metrics',
           ),
         ],
       ),

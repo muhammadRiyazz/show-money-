@@ -338,20 +338,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     // 2. Today Leads
     final rawTodayLeads = summary?['today_leads'] ?? summary?['today_lead'] ?? summary?['new_today'];
-    final todayLeadsInt = int.tryParse(rawTodayLeads?.toString() ?? '') ??
-        (totalLeadsInt > 0 ? math.max(1, (totalLeadsInt * 0.05).round()) : 0);
+    final todayLeadsInt = int.tryParse(rawTodayLeads?.toString() ?? '') ?? 0;
     final todayLeadsStr = todayLeadsInt.toString();
 
     // 3. Today Advance
     final rawTodayAdv = summary?['today_advance'] ?? summary?['today_advance_amount'] ?? summary?['advance_today'];
-    final todayAdvInt = int.tryParse(rawTodayAdv?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ??
-        (todayLeadsInt * 2500);
+    final todayAdvInt = int.tryParse(rawTodayAdv?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? 0;
     final todayAdvStr = _formatCurrency(todayAdvInt);
 
     // 4. Total Advance
     final rawTotalAdv = summary?['total_advance'] ?? summary?['total_advance_amount'] ?? summary?['advance_total'];
-    final totalAdvInt = int.tryParse(rawTotalAdv?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ??
-        (totalLeadsInt * 1800);
+    final totalAdvInt = int.tryParse(rawTotalAdv?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? 0;
     final totalAdvStr = _formatCurrency(totalAdvInt);
 
     // 5. Total Amount Received
@@ -359,8 +356,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         summary?['total_amount_received'] ??
         summary?['total_received'] ??
         summary?['gross_amount'];
-    final totalAmtInt = int.tryParse(rawTotalAmt?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ??
-        (totalAdvInt * 5);
+    final totalAmtInt = int.tryParse(rawTotalAmt?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? 0;
     final totalAmtStr = _formatCurrency(totalAmtInt);
 
     final cards = [
@@ -571,11 +567,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }).toList();
     }
 
+    final rawTodayLeads = summary?['today_leads'] ?? summary?['today_lead'] ?? summary?['new_today'];
+    final todayLeadsInt = int.tryParse(rawTodayLeads?.toString() ?? '') ?? 0;
+
+    final rawTodayAdv = summary?['today_advance'] ?? summary?['today_advance_amount'] ?? summary?['advance_today'];
+    final todayAdvInt = int.tryParse(rawTodayAdv?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? 0;
+
+    final rawTotalAdv = summary?['total_advance'] ?? summary?['total_advance_amount'] ?? summary?['advance_total'];
+    final totalAdvInt = int.tryParse(rawTotalAdv?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? 0;
+
+    final rawTotalAmt = summary?['total_amount'] ??
+        summary?['total_amount_received'] ??
+        summary?['total_received'] ??
+        summary?['gross_amount'];
+    final totalAmtInt = int.tryParse(rawTotalAmt?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? 0;
+
     return AnalyticsProgressGraph(
       totalLeads: totalLeadsInt,
       newCount: newCountInt,
       inProgressCount: inProgressCountInt,
       closedCount: paidCountInt,
+      todayLeads: todayLeadsInt,
+      todayAdvance: todayAdvInt,
+      totalAdvance: totalAdvInt,
+      totalAmount: totalAmtInt,
       monthlyData: monthlyStatsList,
       title: 'Monthly Performance & Inflow Analysis',
       subtitle: 'Month-by-month lead trends, advance inflow & conversion efficiency',
