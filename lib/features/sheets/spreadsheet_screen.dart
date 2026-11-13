@@ -9,6 +9,7 @@ import 'package:agency_head/core/models/api_spreadsheet_model.dart';
 import 'package:agency_head/core/services/auth_service.dart';
 import 'package:agency_head/core/services/system_mode_service.dart';
 import 'package:agency_head/core/responsive/responsive_layout.dart';
+import 'package:agency_head/features/sheets/widgets/analytics_progress_graph.dart';
 
 class SpreadsheetScreen extends StatefulWidget {
   final String sheetId;
@@ -28,6 +29,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   bool _isTableView = false; // Manager defaults to Cards view; staff defaults to Table view
   String _searchQuery = '';
   String _selectedStatusFilter = 'all';
+  bool _showAnalyticsGraph = false;
 
   final ScrollController _horizontalController = ScrollController();
   final ScrollController _verticalController = ScrollController();
@@ -2930,6 +2932,76 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
             ),
           ),
 
+          // Graph toggle pill & count for mobile
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${_sheetTotalCount} Total Leads',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF475569),
+                  ),
+                ),
+                InkWell(
+                  onTap: () => setState(() => _showAnalyticsGraph = !_showAnalyticsGraph),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _showAnalyticsGraph
+                          ? AppColors.primary
+                          : AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.auto_graph_rounded,
+                          size: 13,
+                          color: _showAnalyticsGraph ? Colors.white : AppColors.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _showAnalyticsGraph ? 'Hide Graph' : 'Progress Graph',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: _showAnalyticsGraph ? Colors.white : AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          if (_showAnalyticsGraph) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+              child: AnalyticsProgressGraph(
+                totalLeads: _sheetTotalCount,
+                newCount: _sheetNewCount,
+                inProgressCount: _sheetInProgressCount,
+                closedCount: _sheetClosedCount,
+                totalPipelineAmount: _sheetTotalPipelineAmount,
+                title: 'Sheet Progress Analysis',
+                subtitle: 'Lead flow & win rate overview',
+                selectedStatus: _selectedStatusFilter,
+                onStatusFilter: (statusKey) {
+                  setState(() => _selectedStatusFilter = statusKey);
+                },
+                initialExpanded: true,
+              ),
+            ),
+          ],
+
           // Horizontal Filter Chips with Status Counts
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -3136,16 +3208,46 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
         color: Color(0xFFF8FAFC),
         border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
       ),
-      child: isDesktop
-          ? Row(
-              children: statItems.map((c) => Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: c,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (isDesktop)
+            Row(
+              children: [
+                ...statItems.map((c) => Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    child: c,
+                  ),
+                )).toList(),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _showAnalyticsGraph = !_showAnalyticsGraph;
+                    });
+                  },
+                  icon: Icon(
+                    _showAnalyticsGraph ? Icons.keyboard_arrow_up_rounded : Icons.auto_graph_rounded,
+                    size: 16,
+                  ),
+                  label: Text(
+                    _showAnalyticsGraph ? 'Hide Graph' : 'Analytics Graph',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _showAnalyticsGraph ? const Color(0xFF0F172A) : AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                 ),
-              )).toList(),
+              ],
             )
-          : SizedBox(
+          else
+            SizedBox(
               height: 64,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
@@ -3154,6 +3256,25 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 itemBuilder: (_, i) => SizedBox(width: 150, child: statItems[i]),
               ),
             ),
+          if (_showAnalyticsGraph && isDesktop) ...[
+            const SizedBox(height: 12),
+            AnalyticsProgressGraph(
+              totalLeads: _sheetTotalCount,
+              newCount: _sheetNewCount,
+              inProgressCount: _sheetInProgressCount,
+              closedCount: _sheetClosedCount,
+              totalPipelineAmount: _sheetTotalPipelineAmount,
+              title: '${_sheet!.title} · Progress Analysis',
+              subtitle: 'Lead progress breakdown, conversion efficiency & status filter',
+              selectedStatus: _selectedStatusFilter,
+              onStatusFilter: (statusKey) {
+                setState(() => _selectedStatusFilter = statusKey);
+              },
+              initialExpanded: true,
+            ),
+          ],
+        ],
+      ),
     );
   }
 

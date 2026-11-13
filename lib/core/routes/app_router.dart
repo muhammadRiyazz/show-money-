@@ -1,6 +1,7 @@
 import 'package:agency_head/features/leads/lead_details_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:agency_head/features/navigation/main_wrapper.dart';
+import 'package:agency_head/features/dashboard/dashboard_screen.dart';
 import 'package:agency_head/features/splash/splash_screen.dart';
 import 'package:agency_head/features/auth/login_screen.dart';
 import 'package:agency_head/features/profile/profile_screen.dart';
@@ -35,6 +36,10 @@ class AppRouter {
           return MainWrapper(child: child);
         },
         routes: [
+          GoRoute(
+            path: '/dashboard',
+            builder: (context, state) => const DashboardScreen(),
+          ),
           GoRoute(
             path: '/sheets',
             builder: (context, state) => const SheetsListScreen(),

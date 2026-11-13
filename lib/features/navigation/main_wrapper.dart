@@ -41,30 +41,40 @@ class _MainWrapperState extends State<MainWrapper> {
 
   int _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).uri.toString();
-    if (location.startsWith('/sheets') || location == '/') return 0;
-    if (location.startsWith('/executives')) return _isManager ? 1 : 0;
-    if (location.startsWith('/history')) return _isManager ? 2 : 0;
-    if (location.startsWith('/backup')) return _isManager ? 3 : 0;
-    if (location.startsWith('/profile')) return _isManager ? 4 : 1;
-    return 0;
+    if (_isManager) {
+      if (location.startsWith('/dashboard') || location == '/') return 0;
+      if (location.startsWith('/sheets')) return 1;
+      if (location.startsWith('/executives')) return 2;
+      if (location.startsWith('/history')) return 3;
+      if (location.startsWith('/backup')) return 4;
+      if (location.startsWith('/profile')) return 5;
+      return 0;
+    } else {
+      if (location.startsWith('/sheets') || location == '/' || location.startsWith('/dashboard')) return 0;
+      if (location.startsWith('/profile')) return 1;
+      return 0;
+    }
   }
 
   void _onItemTapped(int index, BuildContext context) {
     if (_isManager) {
       switch (index) {
         case 0:
-          context.go('/sheets');
+          context.go('/dashboard');
           break;
         case 1:
-          context.go('/executives');
+          context.go('/sheets');
           break;
         case 2:
-          context.go('/history');
+          context.go('/executives');
           break;
         case 3:
-          context.go('/backup');
+          context.go('/history');
           break;
         case 4:
+          context.go('/backup');
+          break;
+        case 5:
           context.go('/profile');
           break;
       }
@@ -164,7 +174,7 @@ class _MainWrapperState extends State<MainWrapper> {
       canPop: selectedIndex == 0,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop && selectedIndex != 0) {
-          context.go('/sheets');
+          context.go(isManager ? '/dashboard' : '/sheets');
         }
       },
       child: Scaffold(
@@ -184,8 +194,8 @@ class _MainWrapperState extends State<MainWrapper> {
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: 12.0,
-                vertical: 8.0,
+                horizontal: 8.0,
+                vertical: 6.0,
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
@@ -199,13 +209,18 @@ class _MainWrapperState extends State<MainWrapper> {
                   showSelectedLabels: true,
                   showUnselectedLabels: true,
                   type: BottomNavigationBarType.fixed,
-                  selectedFontSize: 12,
-                  unselectedFontSize: 12,
+                  selectedFontSize: 11,
+                  unselectedFontSize: 11,
                   selectedLabelStyle: const TextStyle(
                     fontWeight: FontWeight.w700,
                   ),
                   items: isManager
                       ? [
+                          const BottomNavigationBarItem(
+                            icon: Icon(Icons.dashboard_outlined),
+                            activeIcon: Icon(Icons.dashboard_rounded),
+                            label: 'Dashboard',
+                          ),
                           BottomNavigationBarItem(
                             icon: Icon(Iconex.light.home),
                             activeIcon: Icon(Iconex.filled.home),
@@ -214,25 +229,25 @@ class _MainWrapperState extends State<MainWrapper> {
                           BottomNavigationBarItem(
                             icon: Icon(Iconex.light.users),
                             activeIcon: Icon(Iconex.filled.users),
-                            label: 'Executives',
+                            label: 'Staff',
                           ),
-                          BottomNavigationBarItem(
-                            icon: const Icon(Icons.history_rounded),
-                            activeIcon: const Icon(
+                          const BottomNavigationBarItem(
+                            icon: Icon(Icons.history_rounded),
+                            activeIcon: Icon(
                               Icons.manage_history_rounded,
                             ),
                             label: 'History',
                           ),
-                          BottomNavigationBarItem(
-                            icon: const Icon(Icons.cloud_download_outlined),
-                            activeIcon: const Icon(
+                          const BottomNavigationBarItem(
+                            icon: Icon(Icons.cloud_download_outlined),
+                            activeIcon: Icon(
                               Icons.cloud_download_rounded,
                             ),
                             label: 'Backup',
                           ),
-                          BottomNavigationBarItem(
-                            icon: const Icon(Icons.person_outline),
-                            activeIcon: const Icon(Icons.person),
+                          const BottomNavigationBarItem(
+                            icon: Icon(Icons.person_outline),
+                            activeIcon: Icon(Icons.person),
                             label: 'Profile',
                           ),
                         ]
@@ -242,9 +257,9 @@ class _MainWrapperState extends State<MainWrapper> {
                             activeIcon: Icon(Iconex.filled.home),
                             label: 'Sheets',
                           ),
-                          BottomNavigationBarItem(
-                            icon: const Icon(Icons.person_outline),
-                            activeIcon: const Icon(Icons.person),
+                          const BottomNavigationBarItem(
+                            icon: Icon(Icons.person_outline),
+                            activeIcon: Icon(Icons.person),
                             label: 'Profile',
                           ),
                         ],
@@ -410,51 +425,69 @@ class _MainWrapperState extends State<MainWrapper> {
                     ),
                   ),
                 ),
-                _buildSidebarItem(
-                  index: 0,
-                  selectedIndex: selectedIndex,
-                  title: isManager ? 'My Sheets & Leads' : 'Assigned Sheets',
-                  icon: Iconex.light.home,
-                  activeIcon: Iconex.filled.home,
-                  onTap: () => _onItemTapped(0, context),
-                ),
                 if (isManager) ...[
+                  _buildSidebarItem(
+                    index: 0,
+                    selectedIndex: selectedIndex,
+                    title: 'Dashboard & Analytics',
+                    icon: Icons.dashboard_outlined,
+                    activeIcon: Icons.dashboard_rounded,
+                    onTap: () => _onItemTapped(0, context),
+                  ),
                   const SizedBox(height: 4),
                   _buildSidebarItem(
                     index: 1,
                     selectedIndex: selectedIndex,
-                    title: 'Executives & Staff',
-                    icon: Iconex.light.users,
-                    activeIcon: Iconex.filled.users,
+                    title: 'My Sheets & Leads',
+                    icon: Icons.table_chart_outlined,
+                    activeIcon: Icons.table_chart_rounded,
                     onTap: () => _onItemTapped(1, context),
                   ),
                   const SizedBox(height: 4),
                   _buildSidebarItem(
                     index: 2,
                     selectedIndex: selectedIndex,
-                    title: 'Audit & History',
-                    icon: Icons.history_rounded,
-                    activeIcon: Icons.manage_history_rounded,
+                    title: 'Executives & Staff',
+                    icon: Iconex.light.users,
+                    activeIcon: Iconex.filled.users,
                     onTap: () => _onItemTapped(2, context),
                   ),
                   const SizedBox(height: 4),
                   _buildSidebarItem(
                     index: 3,
                     selectedIndex: selectedIndex,
+                    title: 'Audit & History',
+                    icon: Icons.history_rounded,
+                    activeIcon: Icons.manage_history_rounded,
+                    onTap: () => _onItemTapped(3, context),
+                  ),
+                  const SizedBox(height: 4),
+                  _buildSidebarItem(
+                    index: 4,
+                    selectedIndex: selectedIndex,
                     title: 'Backup & Export',
                     icon: Icons.cloud_download_outlined,
                     activeIcon: Icons.cloud_download_rounded,
-                    onTap: () => _onItemTapped(3, context),
+                    onTap: () => _onItemTapped(4, context),
+                  ),
+                ] else ...[
+                  _buildSidebarItem(
+                    index: 0,
+                    selectedIndex: selectedIndex,
+                    title: 'Assigned Sheets',
+                    icon: Iconex.light.home,
+                    activeIcon: Iconex.filled.home,
+                    onTap: () => _onItemTapped(0, context),
                   ),
                 ],
                 const SizedBox(height: 4),
                 _buildSidebarItem(
-                  index: isManager ? 4 : 1,
+                  index: isManager ? 5 : 1,
                   selectedIndex: selectedIndex,
                   title: 'Profile & Account',
                   icon: Icons.person_outline_rounded,
                   activeIcon: Icons.person_rounded,
-                  onTap: () => _onItemTapped(isManager ? 4 : 1, context),
+                  onTap: () => _onItemTapped(isManager ? 5 : 1, context),
                 ),
               ],
             ),

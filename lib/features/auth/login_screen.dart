@@ -44,7 +44,10 @@ class _LoginScreenState extends State<LoginScreen> {
         });
 
         if (response['status'] == true) {
-          context.go('/sheets');
+          final user = response['data']?['user'] ?? response['user'];
+          final groupId = int.tryParse(user?['group_id']?.toString() ?? '0') ?? 0;
+          final isManager = groupId == 6 || groupId == 1;
+          context.go(isManager ? '/dashboard' : '/sheets');
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

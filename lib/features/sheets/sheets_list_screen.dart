@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconex_flutter/iconex_flutter.dart';
@@ -178,6 +179,11 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
         actions: [
           // Manager Access Control / Mode Toggle Chip
           if (isManager) ...[
+            IconButton(
+              tooltip: 'Home Dashboard & Graphs',
+              icon: const Icon(Icons.dashboard_outlined, color: AppColors.primary),
+              onPressed: () => context.go('/dashboard'),
+            ),
             _buildManagerSystemModeChip(context, isInactive),
             const SizedBox(width: 4),
             IconButton(
@@ -231,9 +237,11 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
               const SizedBox(height: 14),
             ],
 
-            // Top Dashboard Overview Section (Counts & KPIs)
-            _buildDashboardOverview(isDesktop),
-            const SizedBox(height: 16),
+            // Manager Quick Link Bar to Executive Dashboard & Monthly Graphs
+            if (isManager && !hideData && _sheets.isNotEmpty) ...[
+              _buildDashboardShortcutBar(context),
+              const SizedBox(height: 12),
+            ],
 
             // Search Input Bar
             Container(
@@ -403,372 +411,68 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
     );
   }
 
-  Widget _buildDashboardOverview(bool isDesktop) {
-    final hideData = SystemModeService.instance.shouldHideDataForUser(isManager: _isManager);
-    final summary = _dashboardStats?['summary'];
-    final totalSheets = hideData ? '0' : (summary?['total_sheets']?.toString() ?? _sheets.length.toString());
-
-    int computedLeads = 0;
-    if (!hideData) {
-      for (var s in _sheets) {
-        computedLeads += int.tryParse((s['total_rows'] ?? s['total_leads'] ?? '0').toString()) ?? 0;
-      }
-    }
-    final totalLeads = hideData ? '0' : (summary?['total_leads']?.toString() ?? computedLeads.toString());
-
-    final statusCounts = summary?['status_counts'] is Map
-        ? Map<String, dynamic>.from(summary!['status_counts'])
-        : <String, dynamic>{};
-
-    final newCount = hideData ? '0' : (statusCounts['new'] ?? (computedLeads > 0 ? computedLeads.toString() : '0')).toString();
-    final paidCount = hideData ? '0' : (statusCounts['paid'] ?? '0').toString();
-    final staffList = _dashboardStats?['staff_breakdown'] as List?;
-    final staffCount = hideData ? '0' : ((staffList != null && staffList.isNotEmpty) ? staffList.length.toString() : '4');
-
-    final cards = [
-      _buildKpiCard(
-        title: 'Total Sheets',
-        value: totalSheets,
-        subtitle: 'Active workspaces',
-        icon: Icons.table_chart_rounded,
-        color: const Color(0xFF3B82F6),
-        badge: 'Sheets',
-      ),
-      _buildKpiCard(
-        title: 'Total Leads',
-        value: totalLeads,
-        subtitle: 'All candidate records',
-        icon: Icons.people_alt_rounded,
-        color: const Color(0xFF8B5CF6),
-        badge: 'Pool',
-      ),
-      _buildKpiCard(
-        title: 'New Inflow',
-        value: newCount,
-        subtitle: 'Awaiting action',
-        icon: Icons.trending_up_rounded,
-        color: const Color(0xFFF59E0B),
-        badge: 'New',
-      ),
-      _buildKpiCard(
-        title: 'Paid / Won',
-        value: paidCount,
-        subtitle: 'Converted leads',
-        icon: Icons.check_circle_rounded,
-        color: const Color(0xFF10B981),
-        badge: 'Won',
-      ),
-      _buildKpiCard(
-        title: 'Active Staff',
-        value: staffCount,
-        subtitle: 'Team executives',
-        icon: Icons.badge_rounded,
-        color: const Color(0xFF6366F1),
-        badge: 'Staff',
-      ),
-    ];
-
-    if (isDesktop) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          return Row(
-            children: cards.map((c) => Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 5),
-                child: c,
-              ),
-            )).toList(),
-          );
-        },
-      );
-    } else {
-      // Mobile Adaptive Dashboard: Clean 2x2 KPI card grid + team staff banner
-      // Eliminates awkward horizontal scrolling and prevents RenderFlex bottom overflow!
-      return _buildMobileDashboardOverview(
-        totalSheets: totalSheets,
-        totalLeads: totalLeads,
-        newCount: newCount,
-        paidCount: paidCount,
-        staffCount: staffCount,
-      );
-    }
-  }
-
-  Widget _buildMobileDashboardOverview({
-    required String totalSheets,
-    required String totalLeads,
-    required String newCount,
-    required String paidCount,
-    required String staffCount,
-  }) {
+  Widget _buildDashboardShortcutBar(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
         children: [
-          // Row 1: Sheets & Leads
-          Row(
-            children: [
-              Expanded(
-                child: _buildCompactKpiTile(
-                  title: 'Total Sheets',
-                  value: totalSheets,
-                  icon: Icons.table_chart_rounded,
-                  color: const Color(0xFF3B82F6),
-                  badge: 'Sheets',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildCompactKpiTile(
-                  title: 'Total Leads',
-                  value: totalLeads,
-                  icon: Icons.people_alt_rounded,
-                  color: const Color(0xFF8B5CF6),
-                  badge: 'Pool',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Row 2: New Inflow & Paid
-          Row(
-            children: [
-              Expanded(
-                child: _buildCompactKpiTile(
-                  title: 'New Inflow',
-                  value: newCount,
-                  icon: Icons.trending_up_rounded,
-                  color: const Color(0xFFF59E0B),
-                  badge: 'New',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildCompactKpiTile(
-                  title: 'Paid / Won',
-                  value: paidCount,
-                  icon: Icons.check_circle_rounded,
-                  color: const Color(0xFF10B981),
-                  badge: 'Won',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Row 3: Active Staff Team Banner
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: const Color(0xFFFDF2F8),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFFCE7F3)),
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.badge_rounded, size: 14, color: Color(0xFFDB2777)),
-                const SizedBox(width: 6),
-                Text(
-                  'Active Team: $staffCount Members',
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFBE185D),
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDB2777).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: const Text(
-                    'Active',
+            child: const Icon(Icons.table_chart_rounded, size: 16, color: AppColors.primary),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '${_sheets.length} Active Workspace Sheets',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const Spacer(),
+          InkWell(
+            onTap: () => context.go('/dashboard'),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.dashboard_rounded, size: 14, color: AppColors.primary),
+                  SizedBox(width: 5),
+                  Text(
+                    'Executive Dashboard & Graphs',
                     style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFFDB2777),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
                     ),
                   ),
-                ),
-              ],
+                  SizedBox(width: 3),
+                  Icon(Icons.chevron_right_rounded, size: 15, color: AppColors.primary),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompactKpiTile({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-    required String badge,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.12)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: Icon(icon, color: color, size: 14),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Text(
-                  badge,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-              height: 1.1,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF64748B),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildKpiCard({
-    required String title,
-    required String value,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-    required String badge,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 20, color: color),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  badge,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF334155),
-                ),
-              ),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 10.5,
-                  color: Color(0xFF94A3B8),
-                  fontWeight: FontWeight.w500,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
           ),
         ],
       ),

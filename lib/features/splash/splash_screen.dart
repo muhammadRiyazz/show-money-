@@ -46,7 +46,10 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     if (isLoggedIn) {
-      context.go('/sheets');
+      final user = await AuthService.getUser();
+      final groupId = int.tryParse(user?['group_id']?.toString() ?? '0') ?? 0;
+      final isManager = groupId == 6 || groupId == 1;
+      context.go(isManager ? '/dashboard' : '/sheets');
     } else {
       context.go('/login');
     }
