@@ -63,29 +63,29 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
   int get _sheetTotalCount {
     if (_sheet == null) return 0;
-    return _sheet!.rows.where((r) => r.id > 0 || !r.leadName.startsWith('Lead #')).length;
+    return _sheet!.rows.where((r) => r.hasRealContent).length;
   }
 
   int get _sheetNewCount {
     if (_sheet == null) return 0;
-    return _sheet!.rows.where((r) => (r.id > 0 || !r.leadName.startsWith('Lead #')) && r.status.toLowerCase().contains('new')).length;
+    return _sheet!.rows.where((r) => r.hasRealContent && r.status.toLowerCase().contains('new')).length;
   }
 
   int get _sheetInProgressCount {
     if (_sheet == null) return 0;
-    return _sheet!.rows.where((r) => (r.id > 0 || !r.leadName.startsWith('Lead #')) && (r.status.toLowerCase().contains('progress') || r.status.toLowerCase().contains('contacted'))).length;
+    return _sheet!.rows.where((r) => r.hasRealContent && (r.status.toLowerCase().contains('progress') || r.status.toLowerCase().contains('contacted'))).length;
   }
 
   int get _sheetClosedCount {
     if (_sheet == null) return 0;
-    return _sheet!.rows.where((r) => (r.id > 0 || !r.leadName.startsWith('Lead #')) && (r.status.toLowerCase().contains('closed') || r.status.toLowerCase().contains('paid') || r.status.toLowerCase().contains('won'))).length;
+    return _sheet!.rows.where((r) => r.hasRealContent && (r.status.toLowerCase().contains('closed') || r.status.toLowerCase().contains('paid') || r.status.toLowerCase().contains('won'))).length;
   }
 
   int get _sheetTotalPipelineAmount {
     if (_sheet == null) return 0;
     int total = 0;
     for (var r in _sheet!.rows) {
-      if (r.id <= 0 && r.leadName.startsWith('Lead #')) continue;
+      if (!r.hasRealContent) continue;
       final amt = r.data['Working Amount'] ?? r.data['working_amount'] ?? '';
       total += int.tryParse(amt.toString().replaceAll(',', '').replaceAll(' ', '').replaceAll('₹', '')) ?? 0;
     }
@@ -247,9 +247,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   List<ApiRow> get _filteredRows {
     if (_sheet == null) return [];
     final list = _sheet!.rows.where((row) {
-      if (row.id <= 0 && row.leadName.startsWith('Lead #') &&
-          (_optimisticTempRowId == null || row.id != _optimisticTempRowId)) {
-        // Skip padding dummy rows — but always keep any optimistic temp row visible
+      // Must have actual data entered in at least one user field
+      if (!row.hasRealContent) {
         return false;
       }
       if (_selectedStatusFilter != 'all') {
@@ -296,17 +295,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
     _newlyCreatedRowId = null;
 
-    // Initialize or clear controllers and focus nodes for all columns
+    // Initialize or clear controllers and focus nodes for all columns (start clean and empty)
     for (var col in cols) {
-      final colLower = col.columnName.trim().toLowerCase();
-      final isStatus = colLower == 'status' || colLower.contains('status') || col.columnKey.toLowerCase().contains('status');
-      final isDrop = _isDropdownColumn(col);
-      String defaultText = '';
-      if (isStatus) {
-        defaultText = 'New';
-      } else if (isDrop && col.options.isNotEmpty) {
-        defaultText = col.options.first;
-      }
+      const defaultText = '';
 
       if (_newRowControllers.containsKey(col.columnKey)) {
         _newRowControllers[col.columnKey]!.text = defaultText;
@@ -376,10 +367,19 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       }
     }
 
-    if (rowData.isEmpty) {
+    final hasRealContent = _sheet!.columns.any((col) {
+      final colLower = col.columnName.trim().toLowerCase();
+      final keyLower = col.columnKey.trim().toLowerCase();
+      if (colLower == 'status' || colLower.contains('status') || keyLower.contains('status')) return false;
+      final text = _newRowControllers[col.columnKey]?.text.trim() ??
+                   _newRowControllers[col.columnName]?.text.trim() ?? '';
+      return text.isNotEmpty;
+    });
+
+    if (!hasRealContent) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter at least Name or Number in the row boxes before saving.'),
+          content: Text('Please enter lead information (e.g. Name or Number) before saving.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -802,6 +802,24 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   void _finalizeNewRowOptimistically() {
     if (_sheet == null || !_isAddingInlineRow) return;
 
+    // Check if any non-status column has actual data entered by the user
+    final hasRealContent = _sheet!.columns.any((col) {
+      final colLower = col.columnName.trim().toLowerCase();
+      final keyLower = col.columnKey.trim().toLowerCase();
+      if (colLower == 'status' || colLower.contains('status') || keyLower.contains('status')) return false;
+      final text = _newRowControllers[col.columnKey]?.text.trim() ??
+                   _newRowControllers[col.columnName]?.text.trim() ?? '';
+      return text.isNotEmpty;
+    });
+
+    // If nothing was typed in any actual lead field, cancel silently — not a lead!
+    if (!hasRealContent) {
+      _autoSaveNewLeadTimer?.cancel();
+      _newlyCreatedRowId = null;
+      setState(() => _isAddingInlineRow = false);
+      return;
+    }
+
     // Collect the current controller values into a data map
     final Map<String, dynamic> rowData = {};
     for (var col in _sheet!.columns) {
@@ -809,13 +827,6 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                    _newRowControllers[col.columnName]?.text.trim() ?? '';
       rowData[col.columnName] = text;
       rowData[col.columnKey] = text;
-    }
-
-    // If nothing was typed, cancel silently — no data to preserve
-    final hasContent = rowData.values.any((v) => v.toString().trim().isNotEmpty);
-    if (!hasContent) {
-      setState(() => _isAddingInlineRow = false);
-      return;
     }
 
     final rawStatus = (rowData['Status'] ?? rowData['status'] ?? _newRowStatus).toString();
@@ -876,6 +887,24 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   Future<void> _commitAutoSaveNewLead({bool showToast = false, int? targetTempId}) async {
     _autoSaveNewLeadTimer?.cancel();
     if (_sheet == null) return;
+
+    // Check if any non-status column has actual data entered by the user
+    final hasRealContent = _sheet!.columns.any((col) {
+      final colLower = col.columnName.trim().toLowerCase();
+      final keyLower = col.columnKey.trim().toLowerCase();
+      if (colLower == 'status' || colLower.contains('status') || keyLower.contains('status')) return false;
+      final text = _newRowControllers[col.columnKey]?.text.trim() ??
+                   _newRowControllers[col.columnName]?.text.trim() ?? '';
+      return text.isNotEmpty;
+    });
+
+    if (!hasRealContent) {
+      if (mounted) {
+        _isAutoSavingNotifier.value = false;
+        _autoSaveStatusNotifier.value = 'Auto-saved';
+      }
+      return;
+    }
 
     final Map<String, dynamic> rowData = {};
     for (var col in _sheet!.columns) {

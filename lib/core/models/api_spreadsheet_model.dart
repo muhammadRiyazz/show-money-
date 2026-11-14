@@ -399,6 +399,22 @@ class ApiRow {
     );
   }
 
+  /// Checks whether this row contains actual user data entered in at least one column.
+  /// A row that only has system metadata, empty strings, or default status is considered an empty placeholder.
+  bool get hasRealContent {
+    for (var entry in data.entries) {
+      final key = entry.key.trim().toLowerCase();
+      if (key == 'status' || key == 'row_index' || key == 'id' || key == 'sheet_id' || key == 'created_at' || key == 'updated_at') {
+        continue;
+      }
+      final val = entry.value?.toString().trim() ?? '';
+      if (val.isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Safe accessor for cell value by columnKey, columnName, or col_id
   String getValue(ApiColumn col) {
     // 1. Direct match on columnKey
