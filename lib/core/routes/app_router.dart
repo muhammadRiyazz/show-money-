@@ -1,5 +1,6 @@
-import 'package:agency_head/features/leads/lead_details_screen.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:agency_head/features/leads/lead_details_screen.dart';
 import 'package:agency_head/features/navigation/main_wrapper.dart';
 import 'package:agency_head/features/dashboard/dashboard_screen.dart';
 import 'package:agency_head/features/splash/splash_screen.dart';
@@ -16,22 +17,32 @@ import 'package:agency_head/features/executives/create_executive_screen.dart';
 import 'package:agency_head/features/history/all_history_screen.dart';
 
 class AppRouter {
+  static final GlobalKey<NavigatorState> rootNavigatorKey =
+      GlobalKey<NavigatorState>(debugLabel: 'root');
+  static final GlobalKey<NavigatorState> shellNavigatorKey =
+      GlobalKey<NavigatorState>(debugLabel: 'shell');
+
   static final router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/splash',
     routes: [
       GoRoute(
         path: '/create-sheet',
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const CreateSheetScreen(),
       ),
       GoRoute(
         path: '/splash',
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
         path: '/login',
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const LoginScreen(),
       ),
       ShellRoute(
+        navigatorKey: shellNavigatorKey,
         builder: (context, state, child) {
           return MainWrapper(child: child);
         },
@@ -67,6 +78,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/sheet/:id',
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           return SpreadsheetScreen(sheetId: id);
@@ -74,6 +86,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/sheet/:sheetId/lead/:leadId',
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final sheetId = state.pathParameters['sheetId']!;
           final leadId = state.pathParameters['leadId']!;
@@ -90,10 +103,12 @@ class AppRouter {
       ),
       GoRoute(
         path: '/create-lead',
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const CreateLeadScreen(),
       ),
       GoRoute(
         path: '/lead-details/:id',
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           final extra = state.extra as Map<String, dynamic>?;
@@ -109,6 +124,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/executive-details/:id',
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           return ExecutiveDetailsScreen(executiveId: id);
@@ -116,10 +132,12 @@ class AppRouter {
       ),
       GoRoute(
         path: '/create-executive',
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const CreateExecutiveScreen(),
       ),
       GoRoute(
         path: '/edit-lead/:id',
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           return CreateLeadScreen(leadId: id);

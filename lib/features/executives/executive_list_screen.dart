@@ -127,13 +127,13 @@ class _ExecutiveListScreenState extends State<ExecutiveListScreen> {
           IconButton(
             tooltip: 'System Audit & History',
             icon: const Icon(Icons.history_rounded, color: AppColors.primary),
-            onPressed: () => context.push('/history'),
+            onPressed: () => context.go('/history'),
           ),
           if (isDesktop) ...[
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: OutlinedButton.icon(
-                onPressed: () => context.push('/history'),
+                onPressed: () => context.go('/history'),
                 icon: const Icon(Icons.history_rounded, size: 16),
                 label: const Text('Audit History'),
                 style: OutlinedButton.styleFrom(
@@ -221,7 +221,7 @@ class _ExecutiveListScreenState extends State<ExecutiveListScreen> {
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
-                    onPressed: () => context.push('/history'),
+                    onPressed: () => context.go('/history'),
                     icon: const Icon(Icons.arrow_forward_rounded, size: 13),
                     label: const Text('View Logs', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
                     style: ElevatedButton.styleFrom(

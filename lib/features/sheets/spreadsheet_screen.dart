@@ -2664,7 +2664,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     IconButton(
                       tooltip: 'Backup / Export Sheet Data',
                       icon: const Icon(Icons.cloud_download_rounded, color: AppColors.primary),
-                      onPressed: () => context.push('/backup?sheetId=${widget.sheetId}'),
+                      onPressed: () => context.go('/backup?sheetId=${widget.sheetId}'),
                     ),
                     IconButton(
                       tooltip: 'Audit / Edit History',
@@ -2747,7 +2747,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       icon: const Icon(Icons.more_vert_rounded, color: AppColors.textPrimary, size: 22),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       onSelected: (val) {
-                        if (val == 'backup') context.push('/backup?sheetId=${widget.sheetId}');
+                        if (val == 'backup') context.go('/backup?sheetId=${widget.sheetId}');
                         if (val == 'history') _showEditHistoryDialog();
                         if (val == 'add_lead') _showAddLeadDialog();
                         if (val == 'assign_staff') _showAssignToStaffDialog();

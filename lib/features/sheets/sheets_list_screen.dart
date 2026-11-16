@@ -189,7 +189,7 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
             IconButton(
               tooltip: 'Backup & Export All Data',
               icon: const Icon(Icons.cloud_download_rounded, color: AppColors.primary),
-              onPressed: () => context.push('/backup'),
+              onPressed: () => context.go('/backup'),
             ),
             const SizedBox(width: 4),
           ],

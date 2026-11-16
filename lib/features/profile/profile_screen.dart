@@ -478,7 +478,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const Divider(height: 1, color: Color(0xFFF1F5F9)),
                 const SizedBox(height: 12),
                 InkWell(
-                  onTap: () => context.push('/history'),
+                  onTap: () => context.go('/history'),
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
