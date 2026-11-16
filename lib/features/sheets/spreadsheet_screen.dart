@@ -2892,15 +2892,6 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       ),
                     ],
                   ),
-        floatingActionButton: (_isManager || _isExecutive)
-            ? FloatingActionButton.extended(
-                onPressed: _showAddLeadDialog,
-                icon: const Icon(Icons.person_add_rounded),
-                label: const Text('Add Lead'),
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              )
-            : null,
       ),
     );
   }
