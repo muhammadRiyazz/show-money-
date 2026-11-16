@@ -551,6 +551,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
             '') ??
         math.max(0, totalLeadsInt - newCountInt - paidCountInt);
 
+    final rawTodayLeads = summary?['today_leads'] ?? summary?['today_lead'] ?? summary?['new_today'];
+    final todayLeadsInt = int.tryParse(rawTodayLeads?.toString() ?? '') ?? 0;
+
+    final rawTodayAdv = summary?['today_advance'] ?? summary?['today_advance_amount'] ?? summary?['advance_today'];
+    final todayAdvInt = int.tryParse(rawTodayAdv?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? 0;
+
+    final rawTotalAdv = summary?['total_advance'] ?? summary?['total_advance_amount'] ?? summary?['advance_total'];
+    final totalAdvInt = int.tryParse(rawTotalAdv?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? 0;
+
+    final rawTotalAmt = summary?['total_amount'] ??
+        summary?['total_amount_received'] ??
+        summary?['total_received'] ??
+        summary?['gross_amount'];
+    final totalAmtInt = int.tryParse(rawTotalAmt?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? 0;
+
     // Monthly data if provided by backend
     final rawMonthly = _dashboardStats?['monthly_stats'] ?? _dashboardStats?['months'] ?? summary?['monthly_stats'];
     List<Map<String, dynamic>>? monthlyStatsList;
@@ -608,21 +623,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       }
     }
-
-    final rawTodayLeads = summary?['today_leads'] ?? summary?['today_lead'] ?? summary?['new_today'];
-    final todayLeadsInt = int.tryParse(rawTodayLeads?.toString() ?? '') ?? 0;
-
-    final rawTodayAdv = summary?['today_advance'] ?? summary?['today_advance_amount'] ?? summary?['advance_today'];
-    final todayAdvInt = int.tryParse(rawTodayAdv?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? 0;
-
-    final rawTotalAdv = summary?['total_advance'] ?? summary?['total_advance_amount'] ?? summary?['advance_total'];
-    final totalAdvInt = int.tryParse(rawTotalAdv?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? 0;
-
-    final rawTotalAmt = summary?['total_amount'] ??
-        summary?['total_amount_received'] ??
-        summary?['total_received'] ??
-        summary?['gross_amount'];
-    final totalAmtInt = int.tryParse(rawTotalAmt?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? 0;
 
     return AnalyticsProgressGraph(
       totalLeads: totalLeadsInt,
