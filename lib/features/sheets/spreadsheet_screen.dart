@@ -92,6 +92,61 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     return total;
   }
 
+  /// Calculates actual month-by-month lead & advance counts strictly from real sheet rows
+  List<Map<String, dynamic>> get _sheetMonthlyData {
+    if (_sheet == null) return [];
+    final now = DateTime.now();
+    const monthNames = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+
+    final Map<String, Map<String, dynamic>> monthlyMap = {};
+    for (int i = 5; i >= 0; i--) {
+      final d = DateTime(now.year, now.month - i, 1);
+      final key = '${d.year}-${d.month.toString().padLeft(2, '0')}';
+      final mName = monthNames[d.month - 1];
+      monthlyMap[key] = {
+        'month': '$mName ${d.year}',
+        'short_month': mName,
+        'leads': 0,
+        'advance': 0,
+        'is_current': (i == 0),
+        'is_previous': (i == 1),
+      };
+    }
+
+    final currentKey = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+
+    for (var row in _sheet!.rows) {
+      if (!row.hasRealContent) continue;
+      String key = currentKey;
+      if (row.createdAt != null && row.createdAt!.trim().isNotEmpty) {
+        final parsed = DateTime.tryParse(row.createdAt!.trim());
+        if (parsed != null) {
+          final rowKey = '${parsed.year}-${parsed.month.toString().padLeft(2, '0')}';
+          if (monthlyMap.containsKey(rowKey)) {
+            key = rowKey;
+          }
+        }
+      }
+
+      if (monthlyMap.containsKey(key)) {
+        monthlyMap[key]!['leads'] = (monthlyMap[key]!['leads'] as int) + 1;
+        for (var col in _sheet!.columns) {
+          if (_isAdvanceColumn(col)) {
+            final val = row.getValue(col).replaceAll(RegExp(r'[^0-9]'), '');
+            final adv = int.tryParse(val) ?? 0;
+            monthlyMap[key]!['advance'] = (monthlyMap[key]!['advance'] as int) + adv;
+            break;
+          }
+        }
+      }
+    }
+
+    return monthlyMap.values.toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -3020,6 +3075,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 inProgressCount: _sheetInProgressCount,
                 closedCount: _sheetClosedCount,
                 totalPipelineAmount: _sheetTotalPipelineAmount,
+                monthlyData: _sheetMonthlyData,
                 title: 'Sheet Progress Analysis',
                 subtitle: 'Lead flow & win rate overview',
                 selectedStatus: _selectedStatusFilter,
@@ -3293,6 +3349,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               inProgressCount: _sheetInProgressCount,
               closedCount: _sheetClosedCount,
               totalPipelineAmount: _sheetTotalPipelineAmount,
+              monthlyData: _sheetMonthlyData,
               title: '${_sheet!.title} · Progress Analysis',
               subtitle: 'Lead progress breakdown, conversion efficiency & status filter',
               selectedStatus: _selectedStatusFilter,

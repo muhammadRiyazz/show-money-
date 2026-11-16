@@ -565,6 +565,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
           'is_previous': item['is_previous'] == true || item['previous'] == true,
         };
       }).toList();
+    } else {
+      // Strictly actual data only: no fake dummy historical values
+      final now = DateTime.now();
+      const monthNames = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      final rawThisMonth = summary?['this_month_leads'] ?? summary?['month_leads'] ?? summary?['current_month_leads'];
+      final rawPrevMonth = summary?['prev_month_leads'] ?? summary?['previous_month_leads'] ?? summary?['last_month_leads'];
+
+      final int thisMLeads = rawThisMonth != null
+          ? (int.tryParse(rawThisMonth.toString()) ?? totalLeadsInt)
+          : totalLeadsInt;
+      final int prevMLeads = rawPrevMonth != null
+          ? (int.tryParse(rawPrevMonth.toString()) ?? 0)
+          : 0;
+
+      final rawThisMonthAdv = summary?['this_month_advance'] ?? summary?['month_advance'];
+      final rawPrevMonthAdv = summary?['prev_month_advance'] ?? summary?['previous_month_advance'];
+
+      final int thisMAdv = rawThisMonthAdv != null
+          ? (int.tryParse(rawThisMonthAdv.toString()) ?? totalAdvInt)
+          : totalAdvInt;
+      final int prevMAdv = rawPrevMonthAdv != null
+          ? (int.tryParse(rawPrevMonthAdv.toString()) ?? 0)
+          : 0;
+
+      monthlyStatsList = <Map<String, dynamic>>[];
+      for (int i = 5; i >= 0; i--) {
+        final d = DateTime(now.year, now.month - i, 1);
+        final mName = monthNames[d.month - 1];
+        final isCurrent = (i == 0);
+        final isPrevious = (i == 1);
+        monthlyStatsList.add({
+          'month': '$mName ${d.year}',
+          'short_month': mName,
+          'leads': isCurrent ? thisMLeads : (isPrevious ? prevMLeads : 0),
+          'advance': isCurrent ? thisMAdv : (isPrevious ? prevMAdv : 0),
+          'is_current': isCurrent,
+          'is_previous': isPrevious,
+        });
+      }
     }
 
     final rawTodayLeads = summary?['today_leads'] ?? summary?['today_lead'] ?? summary?['new_today'];

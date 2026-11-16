@@ -97,45 +97,17 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
 
-    if (widget.totalLeads <= 0) {
-      // Clean zeroed monthly progression when database is empty / has no records
-      final result = <Map<String, dynamic>>[];
-      for (int i = 5; i >= 0; i--) {
-        final d = DateTime(now.year, now.month - i, 1);
-        final mName = monthNames[d.month - 1];
-        result.add({
-          'month': '$mName ${d.year}',
-          'short_month': mName,
-          'leads': 0,
-          'advance': 0,
-          'is_current': (i == 0),
-          'is_previous': (i == 1),
-        });
-      }
-      return result;
-    }
-
-    final total = widget.totalLeads;
-    final totalAdv = widget.totalAdvance;
-    final thisMonthLeads = math.max(1, (total * 0.35).round());
-    final lastMonthLeads = math.max(0, (total * 0.45).round());
-    final m2Leads = math.max(0, (total * 0.12).round());
-    final m3Leads = math.max(0, (total * 0.05).round());
-    final m4Leads = math.max(0, (total * 0.02).round());
-    final m5Leads = math.max(0, (total * 0.01).round());
-
-    final leadsList = [m5Leads, m4Leads, m3Leads, m2Leads, lastMonthLeads, thisMonthLeads];
-
+    // Strictly actual data only: NO synthetic dummy multipliers (e.g. 0.45 or 0.35)
+    // Past months (e.g. October, September, etc.) have 0 leads unless real data is supplied.
+    // All current active leads belong strictly to the current active cycle.
     final result = <Map<String, dynamic>>[];
     for (int i = 5; i >= 0; i--) {
       final d = DateTime(now.year, now.month - i, 1);
       final mName = monthNames[d.month - 1];
       final isCurrent = (i == 0);
       final isPrevious = (i == 1);
-      final leads = leadsList[5 - i];
-      final advance = (total > 0 && totalAdv > 0)
-          ? ((leads / total) * totalAdv).round()
-          : 0;
+      final leads = isCurrent ? widget.totalLeads : 0;
+      final advance = isCurrent ? widget.totalAdvance : 0;
 
       result.add({
         'month': '$mName ${d.year}',
@@ -503,10 +475,11 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
         ? (thisMonthAdvance - prevMonthAdvance)
         : (thisMonthLeads - prevMonthLeads);
     final prevBase = _showMonthlyAdvance ? prevMonthAdvance : prevMonthLeads;
+    final currentBase = _showMonthlyAdvance ? thisMonthAdvance : thisMonthLeads;
     final double growthPct = (prevBase > 0 && hasData)
         ? ((diff / prevBase) * 100.0)
-        : 0.0;
-    final isPositive = growthPct >= 0;
+        : (prevBase == 0 && currentBase > 0 ? 100.0 : 0.0);
+    final isPositive = diff >= 0;
 
     // Max value for scaling bars
     int maxVal = 0;
@@ -651,7 +624,11 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
                           Text(
                             !hasData
                                 ? '0.0% Variance'
-                                : '${growthPct.abs().toStringAsFixed(1)}% ${isPositive ? 'Gain' : 'Variance'}',
+                                : (prevBase == 0 && currentBase > 0
+                                    ? (_showMonthlyAdvance
+                                        ? '+${_formatCurrency(thisMonthAdvance)} Inflow'
+                                        : '+$thisMonthLeads New Inflow')
+                                    : '${growthPct.abs().toStringAsFixed(1)}% ${isPositive ? 'Gain' : 'Variance'}'),
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w800,
@@ -666,7 +643,9 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        !hasData ? 'No records in cycle' : 'vs. previous cycle',
+                        !hasData
+                            ? 'No records in cycle'
+                            : (prevBase == 0 && currentBase > 0 ? 'Active cycle' : 'vs. previous cycle'),
                         style: TextStyle(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w500,
