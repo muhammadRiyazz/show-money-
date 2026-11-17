@@ -115,38 +115,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
               'assets/logo/logo_icon_blue.png',
-              width: 26,
-              height: 26,
+              width: 24,
+              height: 24,
               fit: BoxFit.contain,
             ),
-            const SizedBox(width: 10),
-            const Text(
-              'Home Dashboard',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-                fontSize: 20,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                'Manager HQ',
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Home Dashboard',
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: isDesktop ? 20 : 18,
                 ),
               ),
             ),
+            if (isDesktop) ...[
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Manager HQ',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
         backgroundColor: Colors.white,
@@ -154,14 +160,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           // Manager Mode Chip
           if (_isManager) ...[
-            _buildManagerSystemModeChip(context, isInactive),
+            _buildManagerSystemModeChip(context, isInactive, isDesktop),
             const SizedBox(width: 4),
-            IconButton(
-              tooltip: 'Backup & Export All Data',
-              icon: const Icon(Icons.cloud_download_rounded, color: AppColors.primary),
-              onPressed: () => context.go('/backup'),
-            ),
-            const SizedBox(width: 4),
+            if (isDesktop) ...[
+              IconButton(
+                tooltip: 'Backup & Export All Data',
+                icon: const Icon(Icons.cloud_download_rounded, color: AppColors.primary),
+                onPressed: () => context.go('/backup'),
+              ),
+              const SizedBox(width: 4),
+            ],
           ],
           IconButton(
             tooltip: 'Refresh Dashboard',
@@ -769,7 +777,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // =========================================================================
   // MANAGER SYSTEM ACCESS CHIP
   // =========================================================================
-  Widget _buildManagerSystemModeChip(BuildContext context, bool isInactive) {
+  Widget _buildManagerSystemModeChip(BuildContext context, bool isInactive, [bool isDesktop = true]) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       decoration: BoxDecoration(
@@ -783,7 +791,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         borderRadius: BorderRadius.circular(20),
         onTap: () => _showSystemModeDialog(context, isInactive),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: EdgeInsets.symmetric(
+            horizontal: isDesktop ? 10 : 7,
+            vertical: 4,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -792,9 +803,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 size: 14,
                 color: isInactive ? AppColors.error : AppColors.success,
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 4),
               Text(
-                isInactive ? 'Inactive (Hidden)' : 'Active (Visible)',
+                isDesktop
+                    ? (isInactive ? 'Inactive (Hidden)' : 'Active (Visible)')
+                    : (isInactive ? 'Hidden' : 'Active'),
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,

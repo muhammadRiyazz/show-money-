@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:agency_head/core/theme/app_colors.dart';
 
 /// Interactive and sleek visual analytics & progress graph component for Managers.
 /// Features month-by-month lead & advance comparison graphs, pipeline flow,
@@ -219,22 +218,20 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
+                  runSpacing: 3,
                   children: [
-                    Flexible(
-                      child: Text(
-                        widget.title,
-                        style: const TextStyle(
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
-                          letterSpacing: -0.3,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      widget.title,
+                      style: const TextStyle(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.3,
                       ),
                     ),
-                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 7,
@@ -342,6 +339,9 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
   // TAB SWITCHER
   // =========================================================================
   Widget _buildTabSwitcher() {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 500;
+
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
@@ -353,17 +353,20 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
           _buildTabPill(
             index: 0,
             icon: Icons.calendar_month_rounded,
-            title: 'Monthly View & Trend',
+            title: isCompact ? 'Monthly' : 'Monthly View & Trend',
+            isCompact: isCompact,
           ),
           _buildTabPill(
             index: 1,
             icon: Icons.view_column_rounded,
-            title: 'Pipeline Flow',
+            title: isCompact ? 'Pipeline' : 'Pipeline Flow',
+            isCompact: isCompact,
           ),
           _buildTabPill(
             index: 2,
             icon: Icons.donut_large_rounded,
-            title: 'Conversion Ratio',
+            title: isCompact ? 'Conversion' : 'Conversion Ratio',
+            isCompact: isCompact,
           ),
         ],
       ),
@@ -374,6 +377,7 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
     required int index,
     required IconData icon,
     required String title,
+    bool isCompact = false,
   }) {
     final isSelected = _selectedTab == index;
     return Expanded(
@@ -382,7 +386,10 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
         borderRadius: BorderRadius.circular(8),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 7),
+          padding: EdgeInsets.symmetric(
+            vertical: 7,
+            horizontal: isCompact ? 2 : 4,
+          ),
           decoration: BoxDecoration(
             color: isSelected ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
@@ -401,17 +408,17 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
             children: [
               Icon(
                 icon,
-                size: 15,
+                size: isCompact ? 13 : 15,
                 color: isSelected
                     ? const Color(0xFF2563EB)
                     : const Color(0xFF64748B),
               ),
-              const SizedBox(width: 6),
+              SizedBox(width: isCompact ? 3 : 6),
               Flexible(
                 child: Text(
                   title,
                   style: TextStyle(
-                    fontSize: 11.5,
+                    fontSize: isCompact ? 10.5 : 11.5,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                     color: isSelected
                         ? const Color(0xFF1E293B)
@@ -494,8 +501,11 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Top Highlight Row: This Month vs Previous Month + Toggle Pill
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
           children: [
             const Text(
               'Monthly Inflow Comparison',
@@ -513,6 +523,7 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildMiniMetricToggle(
                     title: 'Leads',
@@ -676,8 +687,11 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 6,
                 children: [
                   Text(
                     _showMonthlyAdvance
@@ -690,6 +704,7 @@ class _AnalyticsProgressGraphState extends State<AnalyticsProgressGraph>
                     ),
                   ),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
                         width: 8,

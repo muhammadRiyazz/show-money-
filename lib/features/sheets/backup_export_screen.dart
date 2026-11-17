@@ -50,7 +50,8 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
   final Map<int, ApiSpreadsheet> _loadedSheets = {};
 
   // Filter States
-  String _selectedDatePreset = 'All Time'; // All Time, Today, Yesterday, Last 7 Days, Last 30 Days, This Month, Custom
+  String _selectedDatePreset =
+      'All Time'; // All Time, Today, Yesterday, Last 7 Days, Last 30 Days, This Month, Custom
   DateTimeRange? _customDateRange;
   int? _selectedSheetId; // null = All Sheets
   String _selectedStatus = 'All'; // All or specific status
@@ -87,8 +88,12 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
 
     try {
       final user = await AuthService.getUser();
-      final userId = user != null ? int.tryParse(user['id'].toString()) ?? 3 : 3;
-      final groupId = user != null ? int.tryParse(user['group_id'].toString()) ?? 6 : 6;
+      final userId = user != null
+          ? int.tryParse(user['id'].toString()) ?? 3
+          : 3;
+      final groupId = user != null
+          ? int.tryParse(user['group_id'].toString()) ?? 6
+          : 6;
       final role = user?['group_name']?.toString() ?? 'Manager';
 
       final sheetsRes = await ApiService.getSheets(userId, groupId, role);
@@ -113,7 +118,8 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
           loadedCount++;
           if (mounted) {
             setState(() {
-              _loadingMessage = 'Loading sheet details ($loadedCount of ${rawList.length}): ${s['title'] ?? 'Sheet #$sId'}...';
+              _loadingMessage =
+                  'Loading sheet details ($loadedCount of ${rawList.length}): ${s['title'] ?? 'Sheet #$sId'}...';
             });
           }
 
@@ -167,7 +173,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       final lower = cleanKey.toLowerCase();
       if (!seen.contains(lower)) {
         seen.add(lower);
-        result.add(ExportColumnInfo(key: cleanKey, name: name, isSystem: isSystem));
+        result.add(
+          ExportColumnInfo(key: cleanKey, name: name, isSystem: isSystem),
+        );
       }
     }
 
@@ -231,7 +239,11 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
           final formattedName = k
               .replaceAll('_', ' ')
               .split(' ')
-              .map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '')
+              .map(
+                (w) => w.isNotEmpty
+                    ? '${w[0].toUpperCase()}${w.substring(1)}'
+                    : '',
+              )
               .join(' ');
           addCol(k, formattedName);
         }
@@ -253,7 +265,11 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
   // =========================================================================
   // EXTRACT FULL DATA FOR A CELL
   // =========================================================================
-  String _extractCellValue(ApiSpreadsheet sheet, ApiRow row, ExportColumnInfo colInfo) {
+  String _extractCellValue(
+    ApiSpreadsheet sheet,
+    ApiRow row,
+    ExportColumnInfo colInfo,
+  ) {
     final key = colInfo.key;
     final name = colInfo.name;
     final lowerKey = key.toLowerCase();
@@ -261,17 +277,25 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
 
     // 1. System Metadata
     if (lowerKey == 'sheet_title') return sheet.title;
-    if (lowerKey == 'row_id') return row.rowIndex > 0 ? row.rowIndex.toString() : row.id.toString();
+    if (lowerKey == 'row_id')
+      return row.rowIndex > 0 ? row.rowIndex.toString() : row.id.toString();
     if (lowerKey == 'status') return row.status;
     if (lowerKey == 'assigned_to') return row.assignedToName ?? 'Unassigned';
-    if (lowerKey == 'created_at') return formatHistoryDateTime(row.createdAt) ?? row.createdAt ?? '';
-    if (lowerKey == 'updated_at') return formatHistoryDateTime(row.updatedAt) ?? row.updatedAt ?? '';
+    if (lowerKey == 'created_at')
+      return formatHistoryDateTime(row.createdAt) ?? row.createdAt ?? '';
+    if (lowerKey == 'updated_at')
+      return formatHistoryDateTime(row.updatedAt) ?? row.updatedAt ?? '';
 
     // 2. Standard Lead Properties
-    if (lowerKey == 'lead_name' || lowerName == 'lead / student name' || lowerName == 'lead name' || lowerName == 'name') {
+    if (lowerKey == 'lead_name' ||
+        lowerName == 'lead / student name' ||
+        lowerName == 'lead name' ||
+        lowerName == 'name') {
       return row.leadName;
     }
-    if (lowerKey == 'phone' || lowerName.contains('phone') || lowerName.contains('number')) {
+    if (lowerKey == 'phone' ||
+        lowerName.contains('phone') ||
+        lowerName.contains('number')) {
       return row.phoneNumber;
     }
     if (lowerKey == 'email' || lowerName.contains('email')) {
@@ -280,7 +304,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
     if (lowerKey == 'country' || lowerName.contains('country')) {
       return row.country;
     }
-    if (lowerKey == 'working_amount' || lowerName.contains('working amount') || lowerName == 'amount') {
+    if (lowerKey == 'working_amount' ||
+        lowerName.contains('working amount') ||
+        lowerName == 'amount') {
       return row.workingAmount;
     }
     if (lowerKey == 'agency_name' || lowerName.contains('agency')) {
@@ -289,7 +315,8 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
 
     // 3. Search via sheet.columns
     for (final col in sheet.columns) {
-      if (col.columnKey.toLowerCase() == lowerKey || col.columnName.toLowerCase() == lowerName) {
+      if (col.columnKey.toLowerCase() == lowerKey ||
+          col.columnName.toLowerCase() == lowerName) {
         final val = row.getValue(col);
         if (val.isNotEmpty) return val;
       }
@@ -373,8 +400,12 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
     for (final c in candidates) {
       if (c == null) continue;
       final str = c.toString().trim();
-      if (str.isEmpty || str.toLowerCase() == 'null' || str.startsWith('0000-00-00')) continue;
-      final parsed = DateTime.tryParse(str) ?? DateTime.tryParse(str.replaceAll(' ', 'T'));
+      if (str.isEmpty ||
+          str.toLowerCase() == 'null' ||
+          str.startsWith('0000-00-00'))
+        continue;
+      final parsed =
+          DateTime.tryParse(str) ?? DateTime.tryParse(str.replaceAll(' ', 'T'));
       if (parsed != null) return parsed.toLocal();
     }
     return null;
@@ -466,7 +497,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
     return _activeExportColumns.map((c) => c.name).toList();
   }
 
-  List<List<String>> _buildExportRows(List<MapEntry<ApiSpreadsheet, ApiRow>> entries) {
+  List<List<String>> _buildExportRows(
+    List<MapEntry<ApiSpreadsheet, ApiRow>> entries,
+  ) {
     final cols = _activeExportColumns;
     final rows = <List<String>>[];
 
@@ -491,13 +524,18 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
   Future<void> _exportExcel() async {
     final filtered = _filteredRows;
     if (filtered.isEmpty) {
-      _showWarningSnackBar('No leads match your current filter settings to export.');
+      _showWarningSnackBar(
+        'No leads match your current filter settings to export.',
+      );
       return;
     }
 
     final headers = _buildExportHeaders();
     final rows = _buildExportRows(filtered);
-    final csvContent = BackupExportService.generateCsv(headers: headers, rows: rows);
+    final csvContent = BackupExportService.generateCsv(
+      headers: headers,
+      rows: rows,
+    );
 
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final filename = 'agency_leads_full_backup_$timestamp.csv';
@@ -518,7 +556,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
   Future<void> _exportPdf() async {
     final filtered = _filteredRows;
     if (filtered.isEmpty) {
-      _showWarningSnackBar('No leads match your current filter settings to generate PDF.');
+      _showWarningSnackBar(
+        'No leads match your current filter settings to generate PDF.',
+      );
       return;
     }
 
@@ -528,7 +568,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
     final summary = <String, String>{
       'Total Matching Leads': rows.length.toString(),
       'Fields Per Lead': headers.length.toString(),
-      'Sheets Included': _selectedSheetId != null ? '1 Sheet' : '${_loadedSheets.length} Sheets',
+      'Sheets Included': _selectedSheetId != null
+          ? '1 Sheet'
+          : '${_loadedSheets.length} Sheets',
       'Date Range': _dateRangeDisplayText,
       'Status Filter': _selectedStatus,
     };
@@ -543,7 +585,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
 
     PlatformHelper.printHtml(htmlContent, 'Agency_Full_Leads_Report');
 
-    _showSuccessSnackBar('PDF Print dialog opened! Select "Save as PDF" to save.');
+    _showSuccessSnackBar(
+      'PDF Print dialog opened! Select "Save as PDF" to save.',
+    );
   }
 
   Future<void> _copyForGoogleSheets() async {
@@ -555,7 +599,10 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
 
     final headers = _buildExportHeaders();
     final rows = _buildExportRows(filtered);
-    final tsvContent = BackupExportService.generateGoogleSheetsTsv(headers: headers, rows: rows);
+    final tsvContent = BackupExportService.generateGoogleSheetsTsv(
+      headers: headers,
+      rows: rows,
+    );
 
     await Clipboard.setData(ClipboardData(text: tsvContent));
 
@@ -563,7 +610,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Row(
             children: const [
               Icon(Icons.check_circle_rounded, color: AppColors.success),
@@ -577,7 +626,10 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
             children: [
               Text(
                 '${rows.length} leads with all ${headers.length} columns copied to clipboard.',
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 12),
               Container(
@@ -623,13 +675,18 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
   Future<void> _exportGoogleSheetsCsv() async {
     final filtered = _filteredRows;
     if (filtered.isEmpty) {
-      _showWarningSnackBar('No leads match your current filter settings to export.');
+      _showWarningSnackBar(
+        'No leads match your current filter settings to export.',
+      );
       return;
     }
 
     final headers = _buildExportHeaders();
     final rows = _buildExportRows(filtered);
-    final csvContent = BackupExportService.generateCsv(headers: headers, rows: rows);
+    final csvContent = BackupExportService.generateCsv(
+      headers: headers,
+      rows: rows,
+    );
 
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final filename = 'google_sheets_full_leads_$timestamp.csv';
@@ -640,7 +697,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       mimeType: 'text/csv;charset=utf-8',
     );
 
-    _showSuccessSnackBar('Google Sheets CSV with full data downloaded! Import it via File > Import in Google Sheets.');
+    _showSuccessSnackBar(
+      'Google Sheets CSV with full data downloaded! Import it via File > Import in Google Sheets.',
+    );
   }
 
   Future<void> _exportJsonBackup() async {
@@ -666,7 +725,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       },
       'total_records': filtered.length,
       'total_sheets': _loadedSheets.length,
-      'discovered_columns': allCols.map((c) => {'key': c.key, 'name': c.name, 'is_system': c.isSystem}).toList(),
+      'discovered_columns': allCols
+          .map((c) => {'key': c.key, 'name': c.name, 'is_system': c.isSystem})
+          .toList(),
       'data': filtered.map((entry) {
         final sheet = entry.key;
         final row = entry.value;
@@ -701,7 +762,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       }).toList(),
     };
 
-    final jsonString = BackupExportService.generateJsonBackup(backupPayload: payload);
+    final jsonString = BackupExportService.generateJsonBackup(
+      backupPayload: payload,
+    );
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final filename = 'agency_complete_database_backup_$timestamp.json';
 
@@ -720,7 +783,11 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
             const SizedBox(width: 10),
             Expanded(child: Text(msg)),
           ],
@@ -738,7 +805,11 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.info_outline_rounded, color: Colors.white, size: 20),
+            const Icon(
+              Icons.info_outline_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
             const SizedBox(width: 10),
             Expanded(child: Text(msg)),
           ],
@@ -752,11 +823,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
 
   Future<void> _pickCustomDateRange() async {
     final now = DateTime.now();
-    final initialRange = _customDateRange ??
-        DateTimeRange(
-          start: now.subtract(const Duration(days: 30)),
-          end: now,
-        );
+    final initialRange =
+        _customDateRange ??
+        DateTimeRange(start: now.subtract(const Duration(days: 30)), end: now);
 
     final picked = await showDateRangePicker(
       context: context,
@@ -799,14 +868,21 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       appBar: AppBar(
         title: const Text(
           'Backup & Export Full Data',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textPrimary),
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+            color: AppColors.textPrimary,
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
             tooltip: 'Refresh All Sheets',
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.textPrimary),
+            icon: const Icon(
+              Icons.refresh_rounded,
+              color: AppColors.textPrimary,
+            ),
             onPressed: _loadAllData,
           ),
           const SizedBox(width: 8),
@@ -821,62 +897,76 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                   const SizedBox(height: 16),
                   Text(
                     _loadingMessage,
-                    style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textSecondary, fontSize: 13.5),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                      fontSize: 13.5,
+                    ),
                   ),
                 ],
               ),
             )
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 48),
-                      const SizedBox(height: 12),
-                      Text(
-                        _error!,
-                        style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: _loadAllData,
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('Try Again'),
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    color: AppColors.error,
+                    size: 48,
                   ),
-                )
-              : SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isDesktop ? 28 : 16,
-                    vertical: 20,
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    style: const TextStyle(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 1. TOP HEADER BANNER
-                      _buildHeaderBanner(filtered.length, activeCols.length),
-
-                      const SizedBox(height: 18),
-
-                      // 2. EXPORT FORMAT CARDS (Excel, PDF, Google Sheets, JSON)
-                      _buildExportActionCards(filtered.length),
-
-                      const SizedBox(height: 24),
-
-                      // 3. FILTERING & DATE RANGE CONTROLS (WITH FULL DATA TOGGLE)
-                      _buildFilterControls(),
-
-                      const SizedBox(height: 24),
-
-                      // 4. LIVE PREVIEW TABLE WITH ALL COLUMNS
-                      _buildLivePreviewTable(filtered, activeCols),
-
-                      const SizedBox(height: 40),
-                    ],
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: _loadAllData,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Try Again'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                    ),
                   ),
-                ),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: isDesktop ? 28 : 16,
+                vertical: 20,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 1. TOP HEADER BANNER
+                  _buildHeaderBanner(filtered.length, activeCols.length),
+
+                  const SizedBox(height: 18),
+
+                  // 2. EXPORT FORMAT CARDS (Excel, PDF, Google Sheets, JSON)
+                  _buildExportActionCards(filtered.length),
+
+                  const SizedBox(height: 24),
+
+                  // 3. FILTERING & DATE RANGE CONTROLS (WITH FULL DATA TOGGLE)
+                  _buildFilterControls(),
+
+                  const SizedBox(height: 24),
+
+                  // 4. LIVE PREVIEW TABLE WITH ALL COLUMNS
+                  _buildLivePreviewTable(filtered, activeCols),
+
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
     );
   }
 
@@ -934,50 +1024,57 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                     const SizedBox(height: 2),
                     Text(
                       'Full data export mode: all custom fields, sheet columns, and metadata included.',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          const Divider(height: 1, color: Colors.white24),
-          const SizedBox(height: 14),
+          // const SizedBox(height: 16),
+          // const Divider(height: 1, color: Colors.white24),
+          // const SizedBox(height: 14),
 
-          // Stats row
-          Wrap(
-            spacing: 12,
-            runSpacing: 10,
-            children: [
-              _buildWhiteStatBadge(
-                label: 'Sheets Loaded',
-                val: '${_loadedSheets.length} Sheets',
-                icon: Icons.table_chart_rounded,
-              ),
-              _buildWhiteStatBadge(
-                label: 'Matching Leads',
-                val: '$totalMatchingLeads Leads',
-                icon: Icons.people_alt_rounded,
-              ),
-              _buildWhiteStatBadge(
-                label: 'Fields Per Lead',
-                val: '$totalFields Columns',
-                icon: Icons.view_column_rounded,
-              ),
-              _buildWhiteStatBadge(
-                label: 'Date Range',
-                val: _dateRangeDisplayText,
-                icon: Icons.date_range_rounded,
-              ),
-            ],
-          ),
+          // // Stats row
+          // Wrap(
+          //   spacing: 12,
+          //   runSpacing: 10,
+          //   children: [
+          //     _buildWhiteStatBadge(
+          //       label: 'Sheets Loaded',
+          //       val: '${_loadedSheets.length} Sheets',
+          //       icon: Icons.table_chart_rounded,
+          //     ),
+          //     _buildWhiteStatBadge(
+          //       label: 'Matching Leads',
+          //       val: '$totalMatchingLeads Leads',
+          //       icon: Icons.people_alt_rounded,
+          //     ),
+          //     _buildWhiteStatBadge(
+          //       label: 'Fields Per Lead',
+          //       val: '$totalFields Columns',
+          //       icon: Icons.view_column_rounded,
+          //     ),
+          //     _buildWhiteStatBadge(
+          //       label: 'Date Range',
+          //       val: _dateRangeDisplayText,
+          //       icon: Icons.date_range_rounded,
+          //     ),
+          //   ],
+          // ),
         ],
       ),
     );
   }
 
-  Widget _buildWhiteStatBadge({required String label, required String val, required IconData icon}) {
+  Widget _buildWhiteStatBadge({
+    required String label,
+    required String val,
+    required IconData icon,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
@@ -995,11 +1092,19 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
             children: [
               Text(
                 label,
-                style: TextStyle(fontSize: 9.5, color: Colors.white.withValues(alpha: 0.75), fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontSize: 9.5,
+                  color: Colors.white.withValues(alpha: 0.75),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               Text(
                 val,
-                style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w800),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ],
           ),
@@ -1015,7 +1120,11 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       children: [
         const Text(
           '1. Choose Export / Save Format',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textPrimary),
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+            color: AppColors.textPrimary,
+          ),
         ),
         const SizedBox(height: 12),
         LayoutBuilder(
@@ -1032,7 +1141,8 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                 // Card 1: Microsoft Excel
                 _buildFormatCard(
                   title: 'Microsoft Excel',
-                  sub: 'Full lead data spreadsheet with UTF-8 BOM. Opens seamlessly in Excel.',
+                  sub:
+                      'Full lead data spreadsheet with UTF-8 BOM. Opens seamlessly in Excel.',
                   btnLabel: 'Download Excel',
                   icon: Icons.table_view_rounded,
                   color: const Color(0xFF107C41),
@@ -1042,7 +1152,8 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                 // Card 2: PDF Document
                 _buildFormatCard(
                   title: 'PDF Document',
-                  sub: 'Executive landscape document with all fields, KPIs & print layout.',
+                  sub:
+                      'Executive landscape document with all fields, KPIs & print layout.',
                   btnLabel: 'Save as PDF',
                   icon: Icons.picture_as_pdf_rounded,
                   color: const Color(0xFFDC2626),
@@ -1055,7 +1166,8 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                 // Card 4: JSON Backup
                 _buildFormatCard(
                   title: 'Full Database Backup',
-                  sub: 'Complete raw JSON data archive with all schemas, columns, and rows.',
+                  sub:
+                      'Complete raw JSON data archive with all schemas, columns, and rows.',
                   btnLabel: 'Download JSON',
                   icon: Icons.data_object_rounded,
                   color: const Color(0xFF7C3AED),
@@ -1109,7 +1221,11 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: AppColors.textPrimary),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13.5,
+                    color: AppColors.textPrimary,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -1117,7 +1233,11 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
           ),
           Text(
             sub,
-            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.3),
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+              height: 1.3,
+            ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -1126,12 +1246,20 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
             child: ElevatedButton.icon(
               onPressed: onTap,
               icon: const Icon(Icons.download_rounded, size: 14),
-              label: Text(btnLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              label: Text(
+                btnLabel,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: color,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 elevation: 0,
               ),
             ),
@@ -1168,13 +1296,21 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                   color: const Color(0xFF0F9D58).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.grid_on_rounded, color: Color(0xFF0F9D58), size: 20),
+                child: const Icon(
+                  Icons.grid_on_rounded,
+                  color: Color(0xFF0F9D58),
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
                   'Google Sheets',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: AppColors.textPrimary),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13.5,
+                    color: AppColors.textPrimary,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -1182,7 +1318,11 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
           ),
           const Text(
             'Copy full data for instant 1-click paste (Ctrl+V) into Google Sheets or download CSV.',
-            style: TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.3),
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+              height: 1.3,
+            ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -1192,12 +1332,20 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _copyForGoogleSheets,
                   icon: const Icon(Icons.copy_rounded, size: 13),
-                  label: const Text('Copy TSV', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                  label: const Text(
+                    'Copy TSV',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0F9D58),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     elevation: 0,
                   ),
                 ),
@@ -1208,10 +1356,18 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF0F9D58),
                   side: const BorderSide(color: Color(0xFF0F9D58)),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                child: const Text('CSV', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'CSV',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -1234,16 +1390,24 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 4,
             children: [
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: const [
                   Icon(Icons.tune_rounded, color: AppColors.primary, size: 20),
                   SizedBox(width: 8),
                   Text(
-                    '2. Data Filter & Date Range Options',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textPrimary),
+                    '2. Data Filter & Options',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ],
               ),
@@ -1261,7 +1425,7 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                   });
                 },
                 icon: const Icon(Icons.refresh_rounded, size: 15),
-                label: const Text('Reset All', style: TextStyle(fontSize: 12)),
+                label: const Text('Reset', style: TextStyle(fontSize: 12)),
               ),
             ],
           ),
@@ -1271,17 +1435,23 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: _exportAllColumns ? const Color(0xFFEFF6FF) : const Color(0xFFF8FAFC),
+              color: _exportAllColumns
+                  ? const Color(0xFFEFF6FF)
+                  : const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: _exportAllColumns ? const Color(0xFF93C5FD) : const Color(0xFFE2E8F0),
+                color: _exportAllColumns
+                    ? const Color(0xFF93C5FD)
+                    : const Color(0xFFE2E8F0),
               ),
             ),
             child: Row(
               children: [
                 Icon(
                   _exportAllColumns ? Icons.star_rounded : Icons.tune_rounded,
-                  color: _exportAllColumns ? AppColors.primary : const Color(0xFF64748B),
+                  color: _exportAllColumns
+                      ? AppColors.primary
+                      : const Color(0xFF64748B),
                   size: 22,
                 ),
                 const SizedBox(width: 10),
@@ -1296,7 +1466,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: _exportAllColumns ? AppColors.primary : AppColors.textPrimary,
+                          color: _exportAllColumns
+                              ? AppColors.primary
+                              : AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -1304,7 +1476,10 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                         _exportAllColumns
                             ? 'Every column, custom field, and metadata value is automatically included in the export.'
                             : 'Choose specifically which fields to include below.',
-                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -1330,7 +1505,11 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
           // Date Range Presets Chips
           const Text(
             'Date Range Filter:',
-            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF475569),
+            ),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -1344,11 +1523,15 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
               _buildDatePresetChip('Last 30 Days'),
               _buildDatePresetChip('This Month'),
               ActionChip(
-                backgroundColor: _selectedDatePreset == 'Custom' ? AppColors.primary : const Color(0xFFF1F5F9),
+                backgroundColor: _selectedDatePreset == 'Custom'
+                    ? AppColors.primary
+                    : const Color(0xFFF1F5F9),
                 avatar: Icon(
                   Icons.calendar_month_rounded,
                   size: 16,
-                  color: _selectedDatePreset == 'Custom' ? Colors.white : const Color(0xFF64748B),
+                  color: _selectedDatePreset == 'Custom'
+                      ? Colors.white
+                      : const Color(0xFF64748B),
                 ),
                 label: Text(
                   _selectedDatePreset == 'Custom' && _customDateRange != null
@@ -1357,7 +1540,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: _selectedDatePreset == 'Custom' ? Colors.white : const Color(0xFF475569),
+                    color: _selectedDatePreset == 'Custom'
+                        ? Colors.white
+                        : const Color(0xFF475569),
                   ),
                 ),
                 onPressed: _pickCustomDateRange,
@@ -1437,7 +1622,11 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       children: [
         const Text(
           'Select Sheet:',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF475569),
+          ),
         ),
         const SizedBox(height: 6),
         Container(
@@ -1451,11 +1640,17 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
             child: DropdownButton<int?>(
               value: _selectedSheetId,
               isExpanded: true,
-              hint: const Text('All Sheets (Combined Backup)', style: TextStyle(fontSize: 13)),
+              hint: const Text(
+                'All Sheets (Combined Backup)',
+                style: TextStyle(fontSize: 13),
+              ),
               items: [
                 const DropdownMenuItem<int?>(
                   value: null,
-                  child: Text('All Sheets (Combined Backup)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    'All Sheets (Combined Backup)',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
                 ),
                 ..._loadedSheets.values.map((sheet) {
                   return DropdownMenuItem<int?>(
@@ -1486,7 +1681,11 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       children: [
         const Text(
           'Lead Status:',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF475569),
+          ),
         ),
         const SizedBox(height: 6),
         Container(
@@ -1529,7 +1728,11 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       children: [
         const Text(
           'Keyword Search Filter:',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF475569),
+          ),
         ),
         const SizedBox(height: 6),
         TextField(
@@ -1538,7 +1741,11 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
             hintText: 'Search by lead name, phone, email...',
             hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
             isDense: true,
-            prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF94A3B8)),
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              size: 18,
+              color: Color(0xFF94A3B8),
+            ),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
                     icon: const Icon(Icons.clear_rounded, size: 16),
@@ -1554,7 +1761,10 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
             ),
-            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 10,
+              horizontal: 12,
+            ),
           ),
           onChanged: (val) {
             setState(() {
@@ -1572,11 +1782,19 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       tilePadding: EdgeInsets.zero,
       title: Row(
         children: [
-          const Icon(Icons.view_column_rounded, size: 18, color: AppColors.primary),
+          const Icon(
+            Icons.view_column_rounded,
+            size: 18,
+            color: AppColors.primary,
+          ),
           const SizedBox(width: 8),
           Text(
             'Custom Field Selector (${_selectedColumns.length} of ${allCols.length} columns active)',
-            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
+            style: const TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF334155),
+            ),
           ),
         ],
       ),
@@ -1622,7 +1840,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: isChecked ? FontWeight.w700 : FontWeight.w500,
-                  color: isChecked ? AppColors.primary : const Color(0xFF475569),
+                  color: isChecked
+                      ? AppColors.primary
+                      : const Color(0xFF475569),
                 ),
               ),
               selected: isChecked,
@@ -1663,28 +1883,47 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 6,
             children: [
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.preview_rounded, color: AppColors.primary, size: 20),
+                  const Icon(
+                    Icons.preview_rounded,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Text(
-                    '3. Full Data Preview (${entries.length} leads • ${cols.length} fields)',
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textPrimary),
+                    '3. Data Preview (${entries.length} leads)',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   'Showing first ${previewEntries.length} rows',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
             ],
@@ -1697,16 +1936,27 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
               alignment: Alignment.center,
               child: Column(
                 children: [
-                  Icon(Icons.search_off_rounded, size: 44, color: Colors.grey.shade400),
+                  Icon(
+                    Icons.search_off_rounded,
+                    size: 44,
+                    color: Colors.grey.shade400,
+                  ),
                   const SizedBox(height: 10),
                   const Text(
                     'No leads match your chosen filters and date range.',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   const Text(
                     'Try selecting "All Time" or resetting the status/search filters.',
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -1717,8 +1967,14 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
-                  headingRowColor: WidgetStateProperty.all(const Color(0xFF1E3A8A)),
-                  headingTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                  headingRowColor: WidgetStateProperty.all(
+                    const Color(0xFF1E3A8A),
+                  ),
+                  headingTextStyle: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
                   dataRowMinHeight: 38,
                   dataRowMaxHeight: 46,
                   columns: cols.map((col) {
@@ -1743,7 +1999,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                             val,
                             style: TextStyle(
                               fontSize: 12,
-                              fontWeight: (col.key == 'lead_name' || col.key == 'sheet_title')
+                              fontWeight:
+                                  (col.key == 'lead_name' ||
+                                      col.key == 'sheet_title')
                                   ? FontWeight.w700
                                   : FontWeight.normal,
                             ),

@@ -363,10 +363,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
@@ -382,7 +386,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             size: 20,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         const Text(
                           'System Access & Privacy',
                           style: TextStyle(
@@ -412,7 +416,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(width: 5),
                           Text(
-                            isInactive ? 'Inactive (Data Hidden)' : 'Active (Visible)',
+                            isInactive ? 'Inactive (Hidden)' : 'Active (Visible)',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,

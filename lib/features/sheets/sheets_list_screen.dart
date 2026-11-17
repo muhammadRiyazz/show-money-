@@ -139,26 +139,30 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
               'assets/logo/logo_icon_blue.png',
-              width: 26,
-              height: 26,
+              width: 24,
+              height: 24,
               fit: BoxFit.contain,
             ),
-            const SizedBox(width: 10),
-            const Text(
-              'My Sheets',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-                fontSize: 20,
+            const SizedBox(width: 8),
+            const Flexible(
+              child: Text(
+                'My Sheets',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
             if (!_isLoading && _sheets.isNotEmpty && !hideData)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -179,19 +183,23 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
         actions: [
           // Manager Access Control / Mode Toggle Chip
           if (isManager) ...[
-            IconButton(
-              tooltip: 'Home Dashboard & Graphs',
-              icon: const Icon(Icons.dashboard_outlined, color: AppColors.primary),
-              onPressed: () => context.go('/dashboard'),
-            ),
-            _buildManagerSystemModeChip(context, isInactive),
+            if (isDesktop) ...[
+              IconButton(
+                tooltip: 'Home Dashboard & Graphs',
+                icon: const Icon(Icons.dashboard_outlined, color: AppColors.primary),
+                onPressed: () => context.go('/dashboard'),
+              ),
+            ],
+            _buildManagerSystemModeChip(context, isInactive, isDesktop),
             const SizedBox(width: 4),
-            IconButton(
-              tooltip: 'Backup & Export All Data',
-              icon: const Icon(Icons.cloud_download_rounded, color: AppColors.primary),
-              onPressed: () => context.go('/backup'),
-            ),
-            const SizedBox(width: 4),
+            if (isDesktop) ...[
+              IconButton(
+                tooltip: 'Backup & Export All Data',
+                icon: const Icon(Icons.cloud_download_rounded, color: AppColors.primary),
+                onPressed: () => context.go('/backup'),
+              ),
+              const SizedBox(width: 4),
+            ],
           ],
           IconButton(
             tooltip: 'Refresh',
@@ -239,7 +247,7 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
 
             // Manager Quick Link Bar to Executive Dashboard & Monthly Graphs
             if (isManager && !hideData && _sheets.isNotEmpty) ...[
-              _buildDashboardShortcutBar(context),
+              _buildDashboardShortcutBar(context, isDesktop),
               const SizedBox(height: 12),
             ],
 
@@ -411,7 +419,7 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
     );
   }
 
-  Widget _buildDashboardShortcutBar(BuildContext context) {
+  Widget _buildDashboardShortcutBar(BuildContext context, bool isDesktop) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -436,16 +444,21 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
             ),
             child: const Icon(Icons.table_chart_rounded, size: 16, color: AppColors.primary),
           ),
-          const SizedBox(width: 10),
-          Text(
-            '${_sheets.length} Active Workspace Sheets',
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isDesktop
+                  ? '${_sheets.length} Active Workspace Sheets'
+                  : '${_sheets.length} Sheets',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 8),
           InkWell(
             onTap: () => context.go('/dashboard'),
             borderRadius: BorderRadius.circular(8),
@@ -457,19 +470,19 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.dashboard_rounded, size: 14, color: AppColors.primary),
-                  SizedBox(width: 5),
+                children: [
+                  const Icon(Icons.dashboard_rounded, size: 14, color: AppColors.primary),
+                  const SizedBox(width: 5),
                   Text(
-                    'Executive Dashboard & Graphs',
-                    style: TextStyle(
+                    isDesktop ? 'Executive Dashboard & Graphs' : 'Dashboard',
+                    style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: AppColors.primary,
                     ),
                   ),
-                  SizedBox(width: 3),
-                  Icon(Icons.chevron_right_rounded, size: 15, color: AppColors.primary),
+                  const SizedBox(width: 3),
+                  const Icon(Icons.chevron_right_rounded, size: 15, color: AppColors.primary),
                 ],
               ),
             ),
@@ -715,14 +728,17 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
   // =========================================================================
   // SYSTEM MODE / INACTIVE MODE UI HELPERS
   // =========================================================================
-  Widget _buildManagerSystemModeChip(BuildContext context, bool isInactive) {
+  Widget _buildManagerSystemModeChip(BuildContext context, bool isInactive, [bool isDesktop = true]) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 10),
       child: InkWell(
         onTap: () => _showSystemModeDialog(context, isCurrentlyInactive: isInactive),
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: EdgeInsets.symmetric(
+            horizontal: isDesktop ? 10 : 7,
+            vertical: 4,
+          ),
           decoration: BoxDecoration(
             color: isInactive ? const Color(0xFFFEF3C7) : const Color(0xFFF0FDF4),
             borderRadius: BorderRadius.circular(20),
@@ -739,9 +755,11 @@ class _SheetsListScreenState extends State<SheetsListScreen> {
                 size: 14,
                 color: isInactive ? const Color(0xFFD97706) : const Color(0xFF16A34A),
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 4),
               Text(
-                isInactive ? 'Inactive (Hidden)' : 'Active (Visible)',
+                isDesktop
+                    ? (isInactive ? 'Inactive (Hidden)' : 'Active (Visible)')
+                    : (isInactive ? 'Hidden' : 'Active'),
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
