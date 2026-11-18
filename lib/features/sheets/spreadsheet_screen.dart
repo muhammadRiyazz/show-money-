@@ -1241,7 +1241,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   // =========================================================================
   // TOP SECTION UI: Smooth Auto-Save Status Indicator (Always Active)
   // =========================================================================
-  Widget _buildAutoSaveStatusIndicator() {
+  Widget _buildAutoSaveStatusIndicator([bool isDesktop = true]) {
     return ValueListenableBuilder<bool>(
       valueListenable: _isAutoSavingNotifier,
       builder: (context, isAutoSaving, _) {
@@ -1258,39 +1258,53 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 ? const Color(0xFFB45309)
                 : const Color(0xFF15803D);
 
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: borderColor),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isAutoSaving)
-                    const SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Color(0xFFB45309),
+            return Tooltip(
+              message: isAutoSaving
+                  ? 'Auto-saving changes...'
+                  : 'All changes saved to cloud',
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isDesktop ? 10 : 7,
+                  vertical: isDesktop ? 5 : 4,
+                ),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isAutoSaving)
+                      SizedBox(
+                        width: isDesktop ? 12 : 11,
+                        height: isDesktop ? 12 : 11,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            textColor,
+                          ),
+                        ),
+                      )
+                    else
+                      Icon(
+                        Icons.cloud_done_rounded,
+                        size: isDesktop ? 14 : 13,
+                        color: textColor,
+                      ),
+                    if (isDesktop) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        isAutoSaving ? 'Auto-saving...' : 'Auto-saved',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: textColor,
                         ),
                       ),
-                    )
-                  else
-                    Icon(Icons.cloud_done_rounded, size: 14, color: textColor),
-                  const SizedBox(width: 6),
-                  Text(
-                    isAutoSaving ? 'Auto-saving...' : 'Auto-saved',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: textColor,
-                    ),
-                  ),
-                ],
+                    ],
+                  ],
+                ),
               ),
             );
           },
@@ -3188,24 +3202,27 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
             tooltip: 'Back',
             onPressed: () => _handleBackPress(),
           ),
+          titleSpacing: isDesktop ? 16 : 4,
           title: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 _sheet?.title ?? 'Sheet #${widget.sheetId}',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w800,
-                  fontSize: 18,
+                  fontSize: isDesktop ? 18 : 16.5,
                 ),
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              if (_sheet != null && _sheet!.description.isNotEmpty)
+              if (_sheet != null && _sheet!.description.trim().isNotEmpty)
                 Text(
-                  _sheet!.description,
+                  _sheet!.description.trim(),
                   style: const TextStyle(
                     color: Color(0xFF94A3B8),
-                    fontSize: 11.5,
+                    fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
@@ -3325,15 +3342,16 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   ),
                 ]
               : [
-                  // MOBILE ACTIONS: Auto-Save Status Indicator
+                  // MOBILE ACTIONS: Compact Cloud Auto-Save Status Indicator
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                      vertical: 8.0,
-                      horizontal: 4.0,
+                      vertical: 10.0,
+                      horizontal: 2.0,
                     ),
-                    child: _buildAutoSaveStatusIndicator(),
+                    child: _buildAutoSaveStatusIndicator(false),
                   ),
 
+                  // Toggle View Button (Cards vs Table)
                   IconButton(
                     tooltip: _isTableView
                         ? 'Switch to Cards'
@@ -3343,137 +3361,143 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                           ? Icons.grid_view_rounded
                           : Icons.table_chart_rounded,
                       color: AppColors.primary,
-                      size: 22,
+                      size: 20,
                     ),
+                    padding: const EdgeInsets.all(6),
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                     onPressed: () {
                       setState(() {
                         _isTableView = !_isTableView;
                       });
                     },
                   ),
-                  IconButton(
-                    tooltip: 'Refresh',
+
+                  // 3-Dots Overflow Menu (Refresh, History, Backup, Staff, Add Lead)
+                  PopupMenuButton<String>(
                     icon: const Icon(
-                      Icons.refresh_rounded,
+                      Icons.more_vert_rounded,
                       color: AppColors.textPrimary,
-                      size: 22,
+                      size: 20,
                     ),
-                    onPressed: _fetchSheetData,
-                  ),
-                  if (_isManager)
-                    IconButton(
-                      tooltip: 'Edit History',
-                      icon: const Icon(
-                        Icons.history_rounded,
-                        color: AppColors.textPrimary,
-                        size: 22,
-                      ),
-                      onPressed: () => _showEditHistoryDialog(),
+                    padding: const EdgeInsets.all(6),
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  if (_isManager || _isExecutive)
-                    PopupMenuButton<String>(
-                      icon: const Icon(
-                        Icons.more_vert_rounded,
-                        color: AppColors.textPrimary,
-                        size: 22,
+                    onSelected: (val) {
+                      if (val == 'refresh') _fetchSheetData();
+                      if (val == 'backup') {
+                        context.go('/backup?sheetId=${widget.sheetId}');
+                      }
+                      if (val == 'history') _showEditHistoryDialog();
+                      if (val == 'add_lead') _showAddLeadDialog();
+                      if (val == 'assign_staff') _showAssignToStaffDialog();
+                    },
+                    itemBuilder: (ctx) => [
+                      const PopupMenuItem(
+                        value: 'refresh',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.refresh_rounded,
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              'Refresh Sheet',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      onSelected: (val) {
-                        if (val == 'backup')
-                          context.go('/backup?sheetId=${widget.sheetId}');
-                        if (val == 'history') _showEditHistoryDialog();
-                        if (val == 'add_lead') _showAddLeadDialog();
-                        if (val == 'assign_staff') _showAssignToStaffDialog();
-                      },
-                      itemBuilder: (ctx) => [
-                        if (_isManager) ...[
-                          const PopupMenuItem(
-                            value: 'backup',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.cloud_download_rounded,
-                                  size: 18,
-                                  color: AppColors.primary,
+                      if (_isManager) ...[
+                        const PopupMenuItem(
+                          value: 'history',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.history_rounded,
+                                size: 18,
+                                color: AppColors.primary,
+                              ),
+                              SizedBox(width: 10),
+                              Text(
+                                'Audit / Edit History',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
                                 ),
-                                SizedBox(width: 10),
-                                Text(
-                                  'Backup / Export',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          const PopupMenuItem(
-                            value: 'history',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.history_rounded,
-                                  size: 18,
-                                  color: AppColors.primary,
+                        ),
+                        const PopupMenuItem(
+                          value: 'backup',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.cloud_download_rounded,
+                                size: 18,
+                                color: AppColors.primary,
+                              ),
+                              SizedBox(width: 10),
+                              Text(
+                                'Backup / Export',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
                                 ),
-                                SizedBox(width: 10),
-                                Text(
-                                  'Audit / History',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
-                        if (_isManager) ...[
-                          const PopupMenuItem(
-                            value: 'add_lead',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.person_add_rounded,
-                                  size: 18,
-                                  color: AppColors.primary,
+                        ),
+                        const PopupMenuItem(
+                          value: 'add_lead',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.person_add_rounded,
+                                size: 18,
+                                color: AppColors.primary,
+                              ),
+                              SizedBox(width: 10),
+                              Text(
+                                'Add Lead',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
                                 ),
-                                SizedBox(width: 10),
-                                Text(
-                                  'Add Lead',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          const PopupMenuItem(
-                            value: 'assign_staff',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.person_add_alt_1_outlined,
-                                  size: 18,
-                                  color: AppColors.primary,
+                        ),
+                        const PopupMenuItem(
+                          value: 'assign_staff',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.person_add_alt_1_outlined,
+                                size: 18,
+                                color: AppColors.primary,
+                              ),
+                              SizedBox(width: 10),
+                              Text(
+                                'Assign Staff',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
                                 ),
-                                SizedBox(width: 10),
-                                Text(
-                                  'Assign Staff',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ],
-                    ),
+                    ],
+                  ),
                 ],
         ),
         body:
