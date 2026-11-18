@@ -152,21 +152,25 @@ class _AllHistoryScreenState extends State<AllHistoryScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.history_rounded, color: AppColors.primary, size: 24),
             const SizedBox(width: 10),
-            const Text(
-              'Audit & History',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-                fontSize: 20,
+            const Flexible(
+              child: Text(
+                'Audit & History',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
             if (!_isLoading && _historyItems.isNotEmpty)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -177,7 +181,7 @@ class _AllHistoryScreenState extends State<AllHistoryScreen> {
                   style: const TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w700,
-                    fontSize: 12,
+                    fontSize: 11.5,
                   ),
                 ),
               ),
@@ -197,30 +201,69 @@ class _AllHistoryScreenState extends State<AllHistoryScreen> {
       body: ResponsiveContainer(
         padding: EdgeInsets.symmetric(
           horizontal: isDesktop ? 24 : 16,
-          vertical: 16,
+          vertical: 0,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // KPI Summary Stats Banner
-            _buildSummaryStats(isDesktop),
-            const SizedBox(height: 16),
+        child: RefreshIndicator(
+          onRefresh: _fetchHistory,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              // Top KPI Summary Stats Banner & Filter Card (Scrolls with full page!)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // KPI Summary Stats Banner
+                      _buildSummaryStats(isDesktop),
+                      const SizedBox(height: 16),
 
-            // Search & Filter Card
-            _buildSearchAndFilterCard(isDesktop),
-            const SizedBox(height: 16),
+                      // Search & Filter Card
+                      _buildSearchAndFilterCard(isDesktop),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ),
 
-            // Main List View of History Logs
-            Expanded(
-              child: _isLoading
-                  ? _buildShimmer(isDesktop)
-                  : _error != null
-                      ? _buildErrorState()
-                      : filtered.isEmpty
-                          ? _buildEmptyState()
-                          : _buildHistoryListView(filtered, isDesktop),
-            ),
-          ],
+              // Main List View of History Logs / Shimmer / Error / Empty
+              if (_isLoading)
+                SliverToBoxAdapter(
+                  child: _buildShimmer(isDesktop),
+                )
+              else if (_error != null)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: _buildErrorState(),
+                  ),
+                )
+              else if (filtered.isEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: _buildEmptyState(),
+                  ),
+                )
+              else
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _buildHistoryCard(filtered[index], isDesktop),
+                      );
+                    },
+                    childCount: filtered.length,
+                  ),
+                ),
+
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 36),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -520,19 +563,8 @@ class _AllHistoryScreenState extends State<AllHistoryScreen> {
   }
 
   // =========================================================================
-  // HISTORY LIST VIEW
+  // HISTORY ITEM CARD
   // =========================================================================
-  Widget _buildHistoryListView(List<AllHistoryItem> items, bool isDesktop) {
-    return ListView.separated(
-      padding: const EdgeInsets.only(bottom: 24),
-      itemCount: items.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        return _buildHistoryCard(items[index], isDesktop);
-      },
-    );
-  }
-
   Widget _buildHistoryCard(AllHistoryItem item, bool isDesktop) {
     final hasOldValue = item.oldValue.trim().isNotEmpty;
     final hasNewValue = item.newValue.trim().isNotEmpty;
@@ -869,14 +901,18 @@ class _AllHistoryScreenState extends State<AllHistoryScreen> {
     return Shimmer.fromColors(
       baseColor: Colors.grey.shade200,
       highlightColor: Colors.grey.shade50,
-      child: ListView.separated(
-        itemCount: 6,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (_, _) => Container(
-          height: 120,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+      child: Column(
+        children: List.generate(
+          6,
+          (_) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Container(
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
           ),
         ),
       ),
