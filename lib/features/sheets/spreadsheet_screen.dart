@@ -26,7 +26,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   String? _error;
 
   Map<String, dynamic>? _currentUser;
-  bool _isTableView = false; // Manager defaults to Cards view; staff defaults to Table view
+  bool _isTableView =
+      false; // Manager defaults to Cards view; staff defaults to Table view
   String _searchQuery = '';
   String _selectedStatusFilter = 'all';
   bool _showAnalyticsGraph = false;
@@ -56,7 +57,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   Timer? _autoSaveTimer;
   Timer? _autoSaveNewLeadTimer;
   final ValueNotifier<bool> _isAutoSavingNotifier = ValueNotifier<bool>(false);
-  final ValueNotifier<String> _autoSaveStatusNotifier = ValueNotifier<String>('Auto-saved');
+  final ValueNotifier<String> _autoSaveStatusNotifier = ValueNotifier<String>(
+    'Auto-saved',
+  );
 
   // Auto-Save State (Always Enabled)
   final Map<int, Map<String, dynamic>> _pendingCellEdits = {};
@@ -68,17 +71,36 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
   int get _sheetNewCount {
     if (_sheet == null) return 0;
-    return _sheet!.rows.where((r) => r.hasRealContent && r.status.toLowerCase().contains('new')).length;
+    return _sheet!.rows
+        .where(
+          (r) => r.hasRealContent && r.status.toLowerCase().contains('new'),
+        )
+        .length;
   }
 
   int get _sheetInProgressCount {
     if (_sheet == null) return 0;
-    return _sheet!.rows.where((r) => r.hasRealContent && (r.status.toLowerCase().contains('progress') || r.status.toLowerCase().contains('contacted'))).length;
+    return _sheet!.rows
+        .where(
+          (r) =>
+              r.hasRealContent &&
+              (r.status.toLowerCase().contains('progress') ||
+                  r.status.toLowerCase().contains('contacted')),
+        )
+        .length;
   }
 
   int get _sheetClosedCount {
     if (_sheet == null) return 0;
-    return _sheet!.rows.where((r) => r.hasRealContent && (r.status.toLowerCase().contains('closed') || r.status.toLowerCase().contains('paid') || r.status.toLowerCase().contains('won'))).length;
+    return _sheet!.rows
+        .where(
+          (r) =>
+              r.hasRealContent &&
+              (r.status.toLowerCase().contains('closed') ||
+                  r.status.toLowerCase().contains('paid') ||
+                  r.status.toLowerCase().contains('won')),
+        )
+        .length;
   }
 
   int get _sheetTotalPipelineAmount {
@@ -87,7 +109,15 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     for (var r in _sheet!.rows) {
       if (!r.hasRealContent) continue;
       final amt = r.data['Working Amount'] ?? r.data['working_amount'] ?? '';
-      total += int.tryParse(amt.toString().replaceAll(',', '').replaceAll(' ', '').replaceAll('₹', '')) ?? 0;
+      total +=
+          int.tryParse(
+            amt
+                .toString()
+                .replaceAll(',', '')
+                .replaceAll(' ', '')
+                .replaceAll('₹', ''),
+          ) ??
+          0;
     }
     return total;
   }
@@ -97,8 +127,18 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     if (_sheet == null) return [];
     final now = DateTime.now();
     const monthNames = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
 
     final Map<String, Map<String, dynamic>> monthlyMap = {};
@@ -124,7 +164,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       if (row.createdAt != null && row.createdAt!.trim().isNotEmpty) {
         final parsed = DateTime.tryParse(row.createdAt!.trim());
         if (parsed != null) {
-          final rowKey = '${parsed.year}-${parsed.month.toString().padLeft(2, '0')}';
+          final rowKey =
+              '${parsed.year}-${parsed.month.toString().padLeft(2, '0')}';
           if (monthlyMap.containsKey(rowKey)) {
             key = rowKey;
           }
@@ -137,7 +178,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
           if (_isAdvanceColumn(col)) {
             final val = row.getValue(col).replaceAll(RegExp(r'[^0-9]'), '');
             final adv = int.tryParse(val) ?? 0;
-            monthlyMap[key]!['advance'] = (monthlyMap[key]!['advance'] as int) + adv;
+            monthlyMap[key]!['advance'] =
+                (monthlyMap[key]!['advance'] as int) + adv;
             break;
           }
         }
@@ -216,20 +258,37 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   }
 
   bool get _isManager {
-    final groupId = int.tryParse(_currentUser?['group_id']?.toString() ?? '0') ?? 0;
-    final groupName = (_currentUser?['group_name'] ?? '').toString().toLowerCase();
-    return groupId == 6 || groupId == 1 || groupName.contains('manager') || groupName.contains('admin');
+    final groupId =
+        int.tryParse(_currentUser?['group_id']?.toString() ?? '0') ?? 0;
+    final groupName = (_currentUser?['group_name'] ?? '')
+        .toString()
+        .toLowerCase();
+    return groupId == 6 ||
+        groupId == 1 ||
+        groupName.contains('manager') ||
+        groupName.contains('admin');
   }
 
   bool get _isExecutive {
-    final groupId = int.tryParse(_currentUser?['group_id']?.toString() ?? '0') ?? 0;
-    final groupName = (_currentUser?['group_name'] ?? '').toString().toLowerCase();
-    return groupId == 4 || groupId == 5 || groupName.contains('executive') || groupName.contains('staff') || groupName.contains('feild') || groupName.contains('field');
+    final groupId =
+        int.tryParse(_currentUser?['group_id']?.toString() ?? '0') ?? 0;
+    final groupName = (_currentUser?['group_name'] ?? '')
+        .toString()
+        .toLowerCase();
+    return groupId == 4 ||
+        groupId == 5 ||
+        groupName.contains('executive') ||
+        groupName.contains('staff') ||
+        groupName.contains('feild') ||
+        groupName.contains('field');
   }
 
   bool get _isAccounts {
-    final groupId = int.tryParse(_currentUser?['group_id']?.toString() ?? '0') ?? 0;
-    final groupName = (_currentUser?['group_name'] ?? '').toString().toLowerCase();
+    final groupId =
+        int.tryParse(_currentUser?['group_id']?.toString() ?? '0') ?? 0;
+    final groupName = (_currentUser?['group_name'] ?? '')
+        .toString()
+        .toLowerCase();
     return groupId == 2 || groupName.contains('account');
   }
 
@@ -238,15 +297,25 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   }
 
   String _getUserRoleString() {
-    final groupId = int.tryParse(_currentUser?['group_id']?.toString() ?? '0') ?? 0;
-    final groupName = (_currentUser?['group_name'] ?? '').toString().toLowerCase();
-    if (groupId == 6 || groupId == 1 || groupName.contains('manager') || groupName.contains('admin')) {
+    final groupId =
+        int.tryParse(_currentUser?['group_id']?.toString() ?? '0') ?? 0;
+    final groupName = (_currentUser?['group_name'] ?? '')
+        .toString()
+        .toLowerCase();
+    if (groupId == 6 ||
+        groupId == 1 ||
+        groupName.contains('manager') ||
+        groupName.contains('admin')) {
       return 'Manager';
     }
-    if (groupId == 4 || groupName.contains('feild') || groupName.contains('field')) {
+    if (groupId == 4 ||
+        groupName.contains('feild') ||
+        groupName.contains('field')) {
       return 'Feild Executive';
     }
-    if (groupId == 5 || groupName.contains('backend') || groupName.contains('office')) {
+    if (groupId == 5 ||
+        groupName.contains('backend') ||
+        groupName.contains('office')) {
       return 'BackEnd Staff';
     }
     if (groupId == 2 || groupName.contains('account')) {
@@ -316,7 +385,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
         final nameMatches = row.leadName.toLowerCase().contains(q);
         final phoneMatches = row.phoneNumber.toLowerCase().contains(q);
         final countryMatches = row.country.toLowerCase().contains(q);
-        final dataMatches = row.data.values.any((v) => v.toString().toLowerCase().contains(q));
+        final dataMatches = row.data.values.any(
+          (v) => v.toString().toLowerCase().contains(q),
+        );
         return nameMatches || phoneMatches || countryMatches || dataMatches;
       }
       return true;
@@ -357,7 +428,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       if (_newRowControllers.containsKey(col.columnKey)) {
         _newRowControllers[col.columnKey]!.text = defaultText;
       } else {
-        _newRowControllers[col.columnKey] = TextEditingController(text: defaultText);
+        _newRowControllers[col.columnKey] = TextEditingController(
+          text: defaultText,
+        );
       }
       if (_newRowControllers.containsKey(col.columnName)) {
         _newRowControllers[col.columnName]!.text = defaultText;
@@ -391,7 +464,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       }
       for (var col in cols) {
         if (!_isDropdownColumn(col)) {
-          final fn = _newRowFocusNodes[col.columnKey] ?? _newRowFocusNodes[col.columnName];
+          final fn =
+              _newRowFocusNodes[col.columnKey] ??
+              _newRowFocusNodes[col.columnName];
           if (fn != null && fn.canRequestFocus) {
             fn.requestFocus();
             break;
@@ -414,8 +489,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
     final Map<String, dynamic> rowData = {};
     for (var col in _sheet!.columns) {
-      final text = _newRowControllers[col.columnKey]?.text.trim() ??
-                   _newRowControllers[col.columnName]?.text.trim() ?? '';
+      final text =
+          _newRowControllers[col.columnKey]?.text.trim() ??
+          _newRowControllers[col.columnName]?.text.trim() ??
+          '';
       if (text.isNotEmpty) {
         rowData[col.columnName] = text;
         rowData[col.columnKey] = text;
@@ -425,16 +502,23 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     final hasRealContent = _sheet!.columns.any((col) {
       final colLower = col.columnName.trim().toLowerCase();
       final keyLower = col.columnKey.trim().toLowerCase();
-      if (colLower == 'status' || colLower.contains('status') || keyLower.contains('status')) return false;
-      final text = _newRowControllers[col.columnKey]?.text.trim() ??
-                   _newRowControllers[col.columnName]?.text.trim() ?? '';
+      if (colLower == 'status' ||
+          colLower.contains('status') ||
+          keyLower.contains('status'))
+        return false;
+      final text =
+          _newRowControllers[col.columnKey]?.text.trim() ??
+          _newRowControllers[col.columnName]?.text.trim() ??
+          '';
       return text.isNotEmpty;
     });
 
     if (!hasRealContent) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter lead information (e.g. Name or Number) before saving.'),
+          content: Text(
+            'Please enter lead information (e.g. Name or Number) before saving.',
+          ),
           backgroundColor: AppColors.error,
         ),
       );
@@ -442,7 +526,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     }
 
     // Read status directly from text field or default to 'new'
-    final rawStatus = (rowData['Status'] ?? rowData['status'] ?? _newRowStatus).toString();
+    final rawStatus = (rowData['Status'] ?? rowData['status'] ?? _newRowStatus)
+        .toString();
     final statusVal = rawStatus.toLowerCase().replaceAll(' ', '_');
     rowData['Status'] = _formatStatusLabel(rawStatus);
     rowData['status'] = statusVal;
@@ -473,12 +558,15 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       if (!mounted) return;
 
       if (response['status'] == true) {
-        final newRowId = _newlyCreatedRowId ??
+        final newRowId =
+            _newlyCreatedRowId ??
             int.tryParse(response['row_id']?.toString() ?? '') ??
             int.tryParse(response['data']?['id']?.toString() ?? '') ??
             int.tryParse(response['data']?['row_id']?.toString() ?? '') ??
             int.tryParse(response['id']?.toString() ?? '') ??
-            (_sheet != null && _sheet!.rows.isNotEmpty ? _sheet!.rows.first.id + 1 : 1);
+            (_sheet != null && _sheet!.rows.isNotEmpty
+                ? _sheet!.rows.first.id + 1
+                : 1);
         _newlyCreatedRowId = null;
 
         if (_sheet != null && !_sheet!.rows.any((r) => r.id == newRowId)) {
@@ -493,7 +581,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
             createdBy: _currentUserId,
             data: Map<String, dynamic>.from(rowData),
           );
-          _sheet!.rows.add(newRow); // Append to bottom, preserving chronological order
+          _sheet!.rows.add(
+            newRow,
+          ); // Append to bottom, preserving chronological order
         }
 
         _autoSaveStatusNotifier.value = 'New lead added';
@@ -513,7 +603,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error saving lead'), backgroundColor: AppColors.error),
+        const SnackBar(
+          content: Text('Error saving lead'),
+          backgroundColor: AppColors.error,
+        ),
       );
     } finally {
       if (mounted) {
@@ -557,8 +650,13 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       // with the most recent in-memory value, never stale server data.
       String val = row.getValue(col);
       final colLower = col.columnName.trim().toLowerCase();
-      final isStatus = colLower == 'status' || colLower.contains('status') || col.columnKey.toLowerCase().contains('status');
-      if (isStatus && (val.isEmpty || val.toLowerCase() == 'new') && row.status.isNotEmpty) {
+      final isStatus =
+          colLower == 'status' ||
+          colLower.contains('status') ||
+          col.columnKey.toLowerCase().contains('status');
+      if (isStatus &&
+          (val.isEmpty || val.toLowerCase() == 'new') &&
+          row.status.isNotEmpty) {
         val = _formatStatusLabel(row.status);
       } else if (isStatus && val.isNotEmpty) {
         val = _formatStatusLabel(val);
@@ -572,7 +670,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       if (_editRowControllers.containsKey(col.columnName)) {
         _editRowControllers[col.columnName]!.text = val;
       } else {
-        _editRowControllers[col.columnName] = _editRowControllers[col.columnKey]!;
+        _editRowControllers[col.columnName] =
+            _editRowControllers[col.columnKey]!;
       }
 
       if (!_editRowFocusNodes.containsKey(col.columnKey)) {
@@ -600,7 +699,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       }
       for (var col in cols) {
         if (!_isDropdownColumn(col)) {
-          final fn = _editRowFocusNodes[col.columnKey] ?? _editRowFocusNodes[col.columnName];
+          final fn =
+              _editRowFocusNodes[col.columnKey] ??
+              _editRowFocusNodes[col.columnName];
           if (fn != null && fn.canRequestFocus) {
             fn.requestFocus();
             break;
@@ -624,13 +725,20 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
     final Map<String, dynamic> updatedData = Map.from(row.data);
     for (var col in _sheet!.columns) {
-      final text = _editRowControllers[col.columnKey]?.text.trim() ??
-                   _editRowControllers[col.columnName]?.text.trim() ?? '';
+      final text =
+          _editRowControllers[col.columnKey]?.text.trim() ??
+          _editRowControllers[col.columnName]?.text.trim() ??
+          '';
       updatedData[col.columnName] = text;
       updatedData[col.columnKey] = text;
     }
 
-    final rawStatus = (updatedData['Status'] ?? updatedData['status'] ?? _editRowStatus ?? row.status).toString();
+    final rawStatus =
+        (updatedData['Status'] ??
+                updatedData['status'] ??
+                _editRowStatus ??
+                row.status)
+            .toString();
     final statusVal = rawStatus.toLowerCase().replaceAll(' ', '_');
     updatedData['Status'] = _formatStatusLabel(rawStatus);
     updatedData['status'] = statusVal;
@@ -644,21 +752,23 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     _autoSaveStatusNotifier.value = 'Auto-saving...';
 
     ApiService.updateRow(
-      rowId: row.id,
-      userId: _currentUserId,
-      data: updatedData,
-      status: statusVal,
-      role: _getUserRoleString(),
-    ).then((res) {
-      if (mounted) {
-        _isAutoSavingNotifier.value = false;
-        _autoSaveStatusNotifier.value = 'Auto-saved';
-      }
-    }).catchError((_) {
-      if (mounted) {
-        _isAutoSavingNotifier.value = false;
-      }
-    });
+          rowId: row.id,
+          userId: _currentUserId,
+          data: updatedData,
+          status: statusVal,
+          role: _getUserRoleString(),
+        )
+        .then((res) {
+          if (mounted) {
+            _isAutoSavingNotifier.value = false;
+            _autoSaveStatusNotifier.value = 'Auto-saved';
+          }
+        })
+        .catchError((_) {
+          if (mounted) {
+            _isAutoSavingNotifier.value = false;
+          }
+        });
   }
 
   /// Switches focus immediately to targetRow, seamlessly finalizing any prior draft or edit
@@ -683,7 +793,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     if (_isAddingInlineRow) {
       _finalizeNewRowOptimistically();
     } else if (_editingRowId != null) {
-      final prevIndex = _sheet?.rows.indexWhere((r) => r.id == _editingRowId) ?? -1;
+      final prevIndex =
+          _sheet?.rows.indexWhere((r) => r.id == _editingRowId) ?? -1;
       if (prevIndex >= 0) {
         _flushAndSaveRow(_sheet!.rows[prevIndex]);
       }
@@ -697,14 +808,21 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
     final Map<String, dynamic> updatedData = Map.from(row.data);
     for (var col in _sheet!.columns) {
-      final text = _editRowControllers[col.columnKey]?.text.trim() ??
-                   _editRowControllers[col.columnName]?.text.trim() ?? '';
+      final text =
+          _editRowControllers[col.columnKey]?.text.trim() ??
+          _editRowControllers[col.columnName]?.text.trim() ??
+          '';
       updatedData[col.columnName] = text;
       updatedData[col.columnKey] = text;
     }
 
     // Read status directly from text field or fallback to existing row status
-    final rawStatus = (updatedData['Status'] ?? updatedData['status'] ?? _editRowStatus ?? row.status).toString();
+    final rawStatus =
+        (updatedData['Status'] ??
+                updatedData['status'] ??
+                _editRowStatus ??
+                row.status)
+            .toString();
     final statusVal = rawStatus.toLowerCase().replaceAll(' ', '_');
     updatedData['Status'] = _formatStatusLabel(rawStatus);
     updatedData['status'] = statusVal;
@@ -742,7 +860,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating lead: '), backgroundColor: AppColors.error),
+        SnackBar(
+          content: Text('Error updating lead: '),
+          backgroundColor: AppColors.error,
+        ),
       );
     } finally {
       if (mounted) {
@@ -773,13 +894,22 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     });
   }
 
-  Future<void> _commitAutoSave(ApiRow row, ApiColumn col, String newValue, {bool showToast = false}) async {
+  Future<void> _commitAutoSave(
+    ApiRow row,
+    ApiColumn col,
+    String newValue, {
+    bool showToast = false,
+  }) async {
     _autoSaveTimer?.cancel();
     if (!mounted) return;
 
     final colLower = col.columnName.trim().toLowerCase();
     final keyLower = col.columnKey.trim().toLowerCase();
-    final isStatus = colLower == 'status' || keyLower == 'status' || colLower.contains('status') || keyLower.contains('status');
+    final isStatus =
+        colLower == 'status' ||
+        keyLower == 'status' ||
+        colLower.contains('status') ||
+        keyLower.contains('status');
 
     row.setValue(col, newValue);
     if (isStatus) {
@@ -818,10 +948,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
             rowId: row.id,
             userId: _currentUserId,
             role: _getUserRoleString(),
-            data: {
-              col.columnKey: newValue,
-              col.columnName: newValue,
-            },
+            data: {col.columnKey: newValue, col.columnName: newValue},
           );
         }
       }
@@ -840,9 +967,6 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     }
   }
 
-
-
-
   // =========================================================================
   // OPTIMISTIC FINALIZE — Persist New Row Draft When Focus Shifts Away
   // Inserts an in-memory ApiRow immediately so the UI never goes blank while
@@ -850,9 +974,6 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   // the real positive server ID is used directly. Otherwise a temporary
   // negative ID is used and swapped for the real ID when the response arrives.
   // =========================================================================
-  
-
-
 
   void _finalizeNewRowOptimistically() {
     if (_sheet == null || !_isAddingInlineRow) return;
@@ -861,9 +982,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     final hasRealContent = _sheet!.columns.any((col) {
       final colLower = col.columnName.trim().toLowerCase();
       final keyLower = col.columnKey.trim().toLowerCase();
-      if (colLower == 'status' || colLower.contains('status') || keyLower.contains('status')) return false;
-      final text = _newRowControllers[col.columnKey]?.text.trim() ??
-                   _newRowControllers[col.columnName]?.text.trim() ?? '';
+      if (colLower == 'status' ||
+          colLower.contains('status') ||
+          keyLower.contains('status'))
+        return false;
+      final text =
+          _newRowControllers[col.columnKey]?.text.trim() ??
+          _newRowControllers[col.columnName]?.text.trim() ??
+          '';
       return text.isNotEmpty;
     });
 
@@ -878,20 +1004,24 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     // Collect the current controller values into a data map
     final Map<String, dynamic> rowData = {};
     for (var col in _sheet!.columns) {
-      final text = _newRowControllers[col.columnKey]?.text.trim() ??
-                   _newRowControllers[col.columnName]?.text.trim() ?? '';
+      final text =
+          _newRowControllers[col.columnKey]?.text.trim() ??
+          _newRowControllers[col.columnName]?.text.trim() ??
+          '';
       rowData[col.columnName] = text;
       rowData[col.columnKey] = text;
     }
 
-    final rawStatus = (rowData['Status'] ?? rowData['status'] ?? _newRowStatus).toString();
+    final rawStatus = (rowData['Status'] ?? rowData['status'] ?? _newRowStatus)
+        .toString();
     final statusVal = rawStatus.toLowerCase().replaceAll(' ', '_');
     rowData['Status'] = _formatStatusLabel(rawStatus);
     rowData['status'] = statusVal;
 
     // Use the real server ID if a prior background auto-save already created it,
     // otherwise use a temporary negative ID as a placeholder.
-    final tempId = _newlyCreatedRowId ??
+    final tempId =
+        _newlyCreatedRowId ??
         -(DateTime.now().millisecondsSinceEpoch % 100000000);
     final sheetId = int.tryParse(widget.sheetId) ?? _sheet!.id;
 
@@ -939,7 +1069,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     });
   }
 
-  Future<void> _commitAutoSaveNewLead({bool showToast = false, int? targetTempId}) async {
+  Future<void> _commitAutoSaveNewLead({
+    bool showToast = false,
+    int? targetTempId,
+  }) async {
     _autoSaveNewLeadTimer?.cancel();
     if (_sheet == null) return;
 
@@ -947,9 +1080,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     final hasRealContent = _sheet!.columns.any((col) {
       final colLower = col.columnName.trim().toLowerCase();
       final keyLower = col.columnKey.trim().toLowerCase();
-      if (colLower == 'status' || colLower.contains('status') || keyLower.contains('status')) return false;
-      final text = _newRowControllers[col.columnKey]?.text.trim() ??
-                   _newRowControllers[col.columnName]?.text.trim() ?? '';
+      if (colLower == 'status' ||
+          colLower.contains('status') ||
+          keyLower.contains('status'))
+        return false;
+      final text =
+          _newRowControllers[col.columnKey]?.text.trim() ??
+          _newRowControllers[col.columnName]?.text.trim() ??
+          '';
       return text.isNotEmpty;
     });
 
@@ -963,8 +1101,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
     final Map<String, dynamic> rowData = {};
     for (var col in _sheet!.columns) {
-      final text = _newRowControllers[col.columnKey]?.text.trim() ??
-                   _newRowControllers[col.columnName]?.text.trim() ?? '';
+      final text =
+          _newRowControllers[col.columnKey]?.text.trim() ??
+          _newRowControllers[col.columnName]?.text.trim() ??
+          '';
       if (text.isNotEmpty) {
         rowData[col.columnName] = text;
         rowData[col.columnKey] = text;
@@ -979,7 +1119,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       return;
     }
 
-    final rawStatus = (rowData['Status'] ?? rowData['status'] ?? _newRowStatus).toString();
+    final rawStatus = (rowData['Status'] ?? rowData['status'] ?? _newRowStatus)
+        .toString();
     final statusVal = rawStatus.toLowerCase().replaceAll(' ', '_');
     rowData['Status'] = _formatStatusLabel(rawStatus);
     rowData['status'] = statusVal;
@@ -1008,7 +1149,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
           data: rowData,
         );
         if (response['status'] == true) {
-          final createdId = int.tryParse(response['row_id']?.toString() ?? '') ??
+          final createdId =
+              int.tryParse(response['row_id']?.toString() ?? '') ??
               int.tryParse(response['data']?['id']?.toString() ?? '') ??
               int.tryParse(response['data']?['row_id']?.toString() ?? '') ??
               int.tryParse(response['id']?.toString() ?? '');
@@ -1057,8 +1199,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     for (int i = currentIndex + 1; i < cols.length; i++) {
       final nextCol = cols[i];
       if (!_isDropdownColumn(nextCol)) {
-        final focusMap = isInlineAddRow ? _newRowFocusNodes : _editRowFocusNodes;
-        final nextFocus = focusMap[nextCol.columnKey] ?? focusMap[nextCol.columnName];
+        final focusMap = isInlineAddRow
+            ? _newRowFocusNodes
+            : _editRowFocusNodes;
+        final nextFocus =
+            focusMap[nextCol.columnKey] ?? focusMap[nextCol.columnName];
         if (nextFocus != null && nextFocus.canRequestFocus) {
           nextFocus.requestFocus();
           return;
@@ -1129,7 +1274,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       height: 12,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFB45309)),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFFB45309),
+                        ),
                       ),
                     )
                   else
@@ -1174,12 +1321,17 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
         return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               title: const Row(
                 children: [
                   Icon(Icons.view_column_rounded, color: AppColors.primary),
                   SizedBox(width: 10),
-                  Text('Add Custom Column', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
+                  Text(
+                    'Add Custom Column',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                  ),
                 ],
               ),
               content: SizedBox(
@@ -1191,7 +1343,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     children: [
                       const Text(
                         'Add a new custom column to this sheet beyond the 18 master fields.',
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       if (formError != null) ...[
@@ -1202,7 +1357,13 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.red.shade200),
                           ),
-                          child: Text(formError!, style: const TextStyle(color: AppColors.error, fontSize: 12.5)),
+                          child: Text(
+                            formError!,
+                            style: const TextStyle(
+                              color: AppColors.error,
+                              fontSize: 12.5,
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 12),
                       ],
@@ -1211,7 +1372,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                         decoration: InputDecoration(
                           labelText: 'Column Name *',
                           hintText: 'e.g. Passport Status, Remarks',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                           filled: true,
                           fillColor: const Color(0xFFF8FAFC),
                         ),
@@ -1221,14 +1384,22 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                         value: colType,
                         decoration: InputDecoration(
                           labelText: 'Column Type',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                           filled: true,
                           fillColor: const Color(0xFFF8FAFC),
                         ),
                         items: const [
                           DropdownMenuItem(value: 'text', child: Text('Text')),
-                          DropdownMenuItem(value: 'number', child: Text('Number')),
-                          DropdownMenuItem(value: 'dropdown', child: Text('Dropdown')),
+                          DropdownMenuItem(
+                            value: 'number',
+                            child: Text('Number'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'dropdown',
+                            child: Text('Dropdown'),
+                          ),
                         ],
                         onChanged: (val) {
                           if (val != null) setDialogState(() => colType = val);
@@ -1241,7 +1412,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                           decoration: InputDecoration(
                             labelText: 'Dropdown Options (comma-separated)',
                             hintText: 'e.g. Yes, No, Pending',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                             filled: true,
                             fillColor: const Color(0xFFF8FAFC),
                           ),
@@ -1262,7 +1435,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       : () async {
                           final name = colNameController.text.trim();
                           if (name.isEmpty) {
-                            setDialogState(() => formError = 'Column Name is required.');
+                            setDialogState(
+                              () => formError = 'Column Name is required.',
+                            );
                             return;
                           }
 
@@ -1274,8 +1449,13 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                           try {
                             final sheetId = int.tryParse(widget.sheetId) ?? 1;
                             List<String>? opts;
-                            if (colType == 'dropdown' && optionsController.text.trim().isNotEmpty) {
-                              opts = optionsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+                            if (colType == 'dropdown' &&
+                                optionsController.text.trim().isNotEmpty) {
+                              opts = optionsController.text
+                                  .split(',')
+                                  .map((e) => e.trim())
+                                  .where((e) => e.isNotEmpty)
+                                  .toList();
                             }
 
                             final res = await ApiService.addColumn(
@@ -1290,13 +1470,17 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                               Navigator.pop(ctx);
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Column added successfully!'), backgroundColor: AppColors.success),
+                                const SnackBar(
+                                  content: Text('Column added successfully!'),
+                                  backgroundColor: AppColors.success,
+                                ),
                               );
                               _fetchSheetData();
                             } else {
                               setDialogState(() {
                                 isSubmitting = false;
-                                formError = res['message'] ?? 'Failed to add column.';
+                                formError =
+                                    res['message'] ?? 'Failed to add column.';
                               });
                             }
                           } catch (e) {
@@ -1310,10 +1494,19 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   child: isSubmitting
-                      ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
                       : const Text('Add Column'),
                 ),
               ],
@@ -1340,47 +1533,63 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
         return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
             if (staffList.isEmpty && isStaffLoading && staffError == null) {
-              ApiService.getStaff().then((res) {
-                if (dialogContext.mounted) {
-                  if (res['status'] == true && res['data'] != null) {
-                    final allStaff = List<Map<String, dynamic>>.from(res['data']);
-                    // Filter for Field Executives (group 4) and Office Staff (group 5)
-                    final execs = allStaff.where((s) {
-                      final gId = int.tryParse(s['group_id']?.toString() ?? '0') ?? 0;
-                      return gId == 4 || gId == 5;
-                    }).toList();
+              ApiService.getStaff()
+                  .then((res) {
+                    if (dialogContext.mounted) {
+                      if (res['status'] == true && res['data'] != null) {
+                        final allStaff = List<Map<String, dynamic>>.from(
+                          res['data'],
+                        );
+                        // Filter for Field Executives (group 4) and Office Staff (group 5)
+                        final execs = allStaff.where((s) {
+                          final gId =
+                              int.tryParse(s['group_id']?.toString() ?? '0') ??
+                              0;
+                          return gId == 4 || gId == 5;
+                        }).toList();
 
-                    setDialogState(() {
-                      staffList = execs.isNotEmpty ? execs : allStaff;
-                      isStaffLoading = false;
-                      if (staffList.isNotEmpty) {
-                        selectedUserId = int.tryParse(staffList.first['id'].toString());
+                        setDialogState(() {
+                          staffList = execs.isNotEmpty ? execs : allStaff;
+                          isStaffLoading = false;
+                          if (staffList.isNotEmpty) {
+                            selectedUserId = int.tryParse(
+                              staffList.first['id'].toString(),
+                            );
+                          }
+                        });
+                      } else {
+                        setDialogState(() {
+                          staffError = res['message'] ?? 'Unable to load staff';
+                          isStaffLoading = false;
+                        });
                       }
-                    });
-                  } else {
-                    setDialogState(() {
-                      staffError = res['message'] ?? 'Unable to load staff';
-                      isStaffLoading = false;
-                    });
-                  }
-                }
-              }).catchError((err) {
-                if (dialogContext.mounted) {
-                  setDialogState(() {
-                    staffError = err.toString();
-                    isStaffLoading = false;
+                    }
+                  })
+                  .catchError((err) {
+                    if (dialogContext.mounted) {
+                      setDialogState(() {
+                        staffError = err.toString();
+                        isStaffLoading = false;
+                      });
+                    }
                   });
-                }
-              });
             }
 
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               title: const Row(
                 children: [
-                  Icon(Icons.person_add_alt_1_rounded, color: AppColors.primary),
+                  Icon(
+                    Icons.person_add_alt_1_rounded,
+                    color: AppColors.primary,
+                  ),
                   SizedBox(width: 10),
-                  Text('Assign Sheet to Staff', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
+                  Text(
+                    'Assign Sheet to Staff',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                  ),
                 ],
               ),
               content: SizedBox(
@@ -1391,40 +1600,49 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                         child: Center(child: CircularProgressIndicator()),
                       )
                     : staffError != null
-                        ? Text(staffError!, style: const TextStyle(color: AppColors.error))
-                        : Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Select a Field Executive or Office Executive to take ownership of all leads in "${_sheet?.title}".',
-                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                              ),
-                              const SizedBox(height: 18),
-                              DropdownButtonFormField<int>(
-                                initialValue: selectedUserId,
-                                isExpanded: true,
-                                decoration: InputDecoration(
-                                  labelText: 'Select Executive',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                  filled: true,
-                                  fillColor: const Color(0xFFF8FAFC),
-                                ),
-                                items: staffList.map((staff) {
-                                  final name = staff['name'] ?? 'Staff';
-                                  final group = staff['group_name'] ?? 'Executive';
-                                  final id = int.tryParse(staff['id'].toString()) ?? 0;
-                                  return DropdownMenuItem<int>(
-                                    value: id,
-                                    child: Text('$name ($group)'),
-                                  );
-                                }).toList(),
-                                onChanged: (val) {
-                                  setDialogState(() => selectedUserId = val);
-                                },
-                              ),
-                            ],
+                    ? Text(
+                        staffError!,
+                        style: const TextStyle(color: AppColors.error),
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Select a Field Executive or Office Executive to take ownership of all leads in "${_sheet?.title}".',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
                           ),
+                          const SizedBox(height: 18),
+                          DropdownButtonFormField<int>(
+                            initialValue: selectedUserId,
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              labelText: 'Select Executive',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: const Color(0xFFF8FAFC),
+                            ),
+                            items: staffList.map((staff) {
+                              final name = staff['name'] ?? 'Staff';
+                              final group = staff['group_name'] ?? 'Executive';
+                              final id =
+                                  int.tryParse(staff['id'].toString()) ?? 0;
+                              return DropdownMenuItem<int>(
+                                value: id,
+                                child: Text('$name ($group)'),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              setDialogState(() => selectedUserId = val);
+                            },
+                          ),
+                        ],
+                      ),
               ),
               actions: [
                 TextButton(
@@ -1441,7 +1659,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   child: const Text('Assign Sheet'),
                 ),
@@ -1466,7 +1686,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       if (response['status'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response['message'] ?? 'Sheet successfully assigned to staff.'),
+            content: Text(
+              response['message'] ?? 'Sheet successfully assigned to staff.',
+            ),
             backgroundColor: AppColors.success,
           ),
         );
@@ -1516,95 +1738,135 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
-            if (accountsList.isEmpty && isLoadingStaff && accountsError == null) {
+            if (accountsList.isEmpty &&
+                isLoadingStaff &&
+                accountsError == null) {
               // Group ID 2 is strictly for Accounts Staff as per API documentation:
               // Endpoint: GET api/get_staff?group_id=2&status=1
-              ApiService.getStaff(groupId: 2, status: 1).then((res) {
-                if (dialogContext.mounted) {
-                  List<Map<String, dynamic>> rawList = [];
-                  if (res['status'] == true && res['data'] != null && (res['data'] as List).isNotEmpty) {
-                    rawList = List<Map<String, dynamic>>.from(res['data']);
-                  }
-
-                  // Strictly filter: ONLY users where group_id == 2 (Accounts Staff)
-                  final accountsOnly = rawList.where((s) {
-                    final gId = int.tryParse(s['group_id']?.toString() ?? '0') ?? 0;
-                    return gId == 2;
-                  }).toList();
-
-                  if (accountsOnly.isNotEmpty) {
-                    setDialogState(() {
-                      accountsList = accountsOnly;
-                      isLoadingStaff = false;
-                      if (currentAssignedAccount != null &&
-                          accountsList.any((a) => a['id'].toString() == currentAssignedAccount.userId.toString())) {
-                        selectedAccountsId = currentAssignedAccount.userId;
-                      } else {
-                        selectedAccountsId = int.tryParse(accountsList.first['id'].toString());
+              ApiService.getStaff(groupId: 2, status: 1)
+                  .then((res) {
+                    if (dialogContext.mounted) {
+                      List<Map<String, dynamic>> rawList = [];
+                      if (res['status'] == true &&
+                          res['data'] != null &&
+                          (res['data'] as List).isNotEmpty) {
+                        rawList = List<Map<String, dynamic>>.from(res['data']);
                       }
-                    });
-                  } else {
-                    // Fallback to fetch all group_id=2 (unfiltered status in case inactive or status != 1)
-                    ApiService.getStaff(groupId: 2).then((fallbackRes) {
-                      if (dialogContext.mounted) {
-                        List<Map<String, dynamic>> fallbackRaw = [];
-                        if (fallbackRes['status'] == true &&
-                            fallbackRes['data'] != null &&
-                            (fallbackRes['data'] as List).isNotEmpty) {
-                          fallbackRaw = List<Map<String, dynamic>>.from(fallbackRes['data']);
-                        }
 
-                        // Strictly filter: ONLY users where group_id == 2
-                        final fallbackAccountsOnly = fallbackRaw.where((s) {
-                          final gId = int.tryParse(s['group_id']?.toString() ?? '0') ?? 0;
-                          return gId == 2;
-                        }).toList();
+                      // Strictly filter: ONLY users where group_id == 2 (Accounts Staff)
+                      final accountsOnly = rawList.where((s) {
+                        final gId =
+                            int.tryParse(s['group_id']?.toString() ?? '0') ?? 0;
+                        return gId == 2;
+                      }).toList();
 
-                        if (fallbackAccountsOnly.isNotEmpty) {
-                          setDialogState(() {
-                            accountsList = fallbackAccountsOnly;
-                            isLoadingStaff = false;
-                            if (currentAssignedAccount != null &&
-                                accountsList.any((a) => a['id'].toString() == currentAssignedAccount.userId.toString())) {
-                              selectedAccountsId = currentAssignedAccount.userId;
-                            } else {
-                              selectedAccountsId = int.tryParse(accountsList.first['id'].toString());
-                            }
-                          });
-                        } else {
-                          setDialogState(() {
-                            accountsError = 'No Accounts staff found in system (group_id=2).';
-                            isLoadingStaff = false;
-                          });
-                        }
-                      }
-                    }).catchError((err) {
-                      if (dialogContext.mounted) {
+                      if (accountsOnly.isNotEmpty) {
                         setDialogState(() {
-                          accountsError = err.toString();
+                          accountsList = accountsOnly;
                           isLoadingStaff = false;
+                          if (currentAssignedAccount != null &&
+                              accountsList.any(
+                                (a) =>
+                                    a['id'].toString() ==
+                                    currentAssignedAccount.userId.toString(),
+                              )) {
+                            selectedAccountsId = currentAssignedAccount.userId;
+                          } else {
+                            selectedAccountsId = int.tryParse(
+                              accountsList.first['id'].toString(),
+                            );
+                          }
                         });
+                      } else {
+                        // Fallback to fetch all group_id=2 (unfiltered status in case inactive or status != 1)
+                        ApiService.getStaff(groupId: 2)
+                            .then((fallbackRes) {
+                              if (dialogContext.mounted) {
+                                List<Map<String, dynamic>> fallbackRaw = [];
+                                if (fallbackRes['status'] == true &&
+                                    fallbackRes['data'] != null &&
+                                    (fallbackRes['data'] as List).isNotEmpty) {
+                                  fallbackRaw = List<Map<String, dynamic>>.from(
+                                    fallbackRes['data'],
+                                  );
+                                }
+
+                                // Strictly filter: ONLY users where group_id == 2
+                                final fallbackAccountsOnly = fallbackRaw.where((
+                                  s,
+                                ) {
+                                  final gId =
+                                      int.tryParse(
+                                        s['group_id']?.toString() ?? '0',
+                                      ) ??
+                                      0;
+                                  return gId == 2;
+                                }).toList();
+
+                                if (fallbackAccountsOnly.isNotEmpty) {
+                                  setDialogState(() {
+                                    accountsList = fallbackAccountsOnly;
+                                    isLoadingStaff = false;
+                                    if (currentAssignedAccount != null &&
+                                        accountsList.any(
+                                          (a) =>
+                                              a['id'].toString() ==
+                                              currentAssignedAccount.userId
+                                                  .toString(),
+                                        )) {
+                                      selectedAccountsId =
+                                          currentAssignedAccount.userId;
+                                    } else {
+                                      selectedAccountsId = int.tryParse(
+                                        accountsList.first['id'].toString(),
+                                      );
+                                    }
+                                  });
+                                } else {
+                                  setDialogState(() {
+                                    accountsError =
+                                        'No Accounts staff found in system (group_id=2).';
+                                    isLoadingStaff = false;
+                                  });
+                                }
+                              }
+                            })
+                            .catchError((err) {
+                              if (dialogContext.mounted) {
+                                setDialogState(() {
+                                  accountsError = err.toString();
+                                  isLoadingStaff = false;
+                                });
+                              }
+                            });
                       }
-                    });
-                  }
-                }
-              }).catchError((err) {
-                if (dialogContext.mounted) {
-                  setDialogState(() {
-                    accountsError = err.toString();
-                    isLoadingStaff = false;
+                    }
+                  })
+                  .catchError((err) {
+                    if (dialogContext.mounted) {
+                      setDialogState(() {
+                        accountsError = err.toString();
+                        isLoadingStaff = false;
+                      });
+                    }
                   });
-                }
-              });
             }
 
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               title: const Row(
                 children: [
-                  Icon(Icons.account_balance_wallet_rounded, color: AppColors.success),
+                  Icon(
+                    Icons.account_balance_wallet_rounded,
+                    color: AppColors.success,
+                  ),
                   SizedBox(width: 10),
-                  Text('Assign to Accounts Staff', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
+                  Text(
+                    'Assign to Accounts Staff',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                  ),
                 ],
               ),
               content: SizedBox(
@@ -1615,91 +1877,130 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                         child: Center(child: CircularProgressIndicator()),
                       )
                     : accountsError != null
-                        ? Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16.0),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.info_outline, color: AppColors.error),
-                                const SizedBox(width: 10),
-                                Expanded(child: Text(accountsError!, style: const TextStyle(color: AppColors.error))),
-                              ],
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              color: AppColors.error,
                             ),
-                          )
-                        : Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Assign "${_sheet?.title}" to an Accounts staff member (Group 2) for verification, payment tracking, and ledger entries.',
-                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                accountsError!,
+                                style: const TextStyle(color: AppColors.error),
                               ),
-                              if (currentAssignedAccount != null) ...[
-                                const SizedBox(height: 12),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF0FDF4),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Assign "${_sheet?.title}" to an Accounts staff member (Group 2) for verification, payment tracking, and ledger entries.',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                          if (currentAssignedAccount != null) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF0FDF4),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFFBBF7D0),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.check_circle_rounded,
+                                    size: 16,
+                                    color: Color(0xFF16A34A),
                                   ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF16A34A)),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          'Currently Assigned: ${currentAssignedAccount.name} (${currentAssignedAccount.email.isNotEmpty ? currentAssignedAccount.email : 'Accounts'})',
-                                          style: const TextStyle(fontSize: 12, color: Color(0xFF15803D), fontWeight: FontWeight.w600),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Currently Assigned: ${currentAssignedAccount.name} (${currentAssignedAccount.email.isNotEmpty ? currentAssignedAccount.email : 'Accounts'})',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF15803D),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 18),
+                          DropdownButtonFormField<int>(
+                            initialValue: selectedAccountsId,
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              labelText: 'Select Accounts Staff (Group 2)',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: const Color(0xFFF8FAFC),
+                            ),
+                            items: accountsList.map((acc) {
+                              final name = acc['name'] ?? 'Accounts User';
+                              final email = acc['email'] ?? '';
+                              final id =
+                                  int.tryParse(acc['id'].toString()) ?? 0;
+                              return DropdownMenuItem<int>(
+                                value: id,
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 12,
+                                      backgroundColor: AppColors.success
+                                          .withValues(alpha: 0.15),
+                                      child: Text(
+                                        name.isNotEmpty
+                                            ? name[0].toUpperCase()
+                                            : 'A',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.success,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(height: 18),
-                              DropdownButtonFormField<int>(
-                                initialValue: selectedAccountsId,
-                                isExpanded: true,
-                                decoration: InputDecoration(
-                                  labelText: 'Select Accounts Staff (Group 2)',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                  filled: true,
-                                  fillColor: const Color(0xFFF8FAFC),
-                                ),
-                                items: accountsList.map((acc) {
-                                  final name = acc['name'] ?? 'Accounts User';
-                                  final email = acc['email'] ?? '';
-                                  final id = int.tryParse(acc['id'].toString()) ?? 0;
-                                  return DropdownMenuItem<int>(
-                                    value: id,
-                                    child: Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 12,
-                                          backgroundColor: AppColors.success.withValues(alpha: 0.15),
-                                          child: Text(
-                                            name.isNotEmpty ? name[0].toUpperCase() : 'A',
-                                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.success),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(
-                                            email.isNotEmpty ? '$name ($email)' : name,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                                          ),
-                                        ),
-                                      ],
                                     ),
-                                  );
-                                }).toList(),
-                                onChanged: (val) {
-                                  setDialogState(() => selectedAccountsId = val);
-                                },
-                              ),
-                            ],
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        email.isNotEmpty
+                                            ? '$name ($email)'
+                                            : name,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              setDialogState(() => selectedAccountsId = val);
+                            },
                           ),
+                        ],
+                      ),
               ),
               actions: [
                 TextButton(
@@ -1716,9 +2017,15 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.success,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                  child: Text(currentAssignedAccount != null ? 'Update Accounts' : 'Assign to Accounts'),
+                  child: Text(
+                    currentAssignedAccount != null
+                        ? 'Update Accounts'
+                        : 'Assign to Accounts',
+                  ),
                 ),
               ],
             );
@@ -1741,7 +2048,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       if (response['status'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response['message'] ?? 'Sheet successfully assigned to Accounts staff.'),
+            content: Text(
+              response['message'] ??
+                  'Sheet successfully assigned to Accounts staff.',
+            ),
             backgroundColor: AppColors.success,
           ),
         );
@@ -1776,7 +2086,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     // Populate initial items from sheet if available (Option A)
     if (_sheet != null && _sheet!.editHistory.isNotEmpty) {
       if (rowId != null) {
-        historyItems = _sheet!.editHistory.where((h) => h.rowId == rowId).toList();
+        historyItems = _sheet!.editHistory
+            .where((h) => h.rowId == rowId)
+            .toList();
       } else {
         historyItems = List.from(_sheet!.editHistory);
       }
@@ -1792,7 +2104,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 if (rowId != null) {
                   // Dedicated Row History endpoint (Option B)
                   final res = await ApiService.getRowHistory(rowId: rowId);
-                  if (dialogCtx.mounted && res['status'] == true && res['data'] != null) {
+                  if (dialogCtx.mounted &&
+                      res['status'] == true &&
+                      res['data'] != null) {
                     final list = (res['data'] as List)
                         .map((e) => ApiEditHistory.fromJson(e))
                         .toList();
@@ -1803,11 +2117,16 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     return;
                   }
                 } else {
-                  final sheetIdInt = int.tryParse(widget.sheetId) ?? (_sheet?.id ?? 0);
+                  final sheetIdInt =
+                      int.tryParse(widget.sheetId) ?? (_sheet?.id ?? 0);
                   if (sheetIdInt > 0) {
                     // Dedicated Sheet History endpoint (Option B)
-                    final res = await ApiService.getSheetHistory(sheetId: sheetIdInt);
-                    if (dialogCtx.mounted && res['status'] == true && res['data'] != null) {
+                    final res = await ApiService.getSheetHistory(
+                      sheetId: sheetIdInt,
+                    );
+                    if (dialogCtx.mounted &&
+                        res['status'] == true &&
+                        res['data'] != null) {
                       final list = (res['data'] as List)
                           .map((e) => ApiEditHistory.fromJson(e))
                           .toList();
@@ -1846,7 +2165,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
             return Dialog(
               backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               insetPadding: EdgeInsets.symmetric(
                 horizontal: isDesktop ? 60 : 16,
                 vertical: 24,
@@ -1870,7 +2191,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                               color: AppColors.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(Icons.history_rounded, color: AppColors.primary, size: 24),
+                            child: const Icon(
+                              Icons.history_rounded,
+                              color: AppColors.primary,
+                              size: 24,
+                            ),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -1880,19 +2205,32 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                                 Row(
                                   children: [
                                     Text(
-                                      rowId != null ? 'Lead Edit History' : 'Sheet Audit Log',
-                                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textPrimary),
+                                      rowId != null
+                                          ? 'Lead Edit History'
+                                          : 'Sheet Audit Log',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 18,
+                                        color: AppColors.textPrimary,
+                                      ),
                                     ),
                                     const SizedBox(width: 8),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFFF1F5F9),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: Text(
                                         '${historyItems.length} edits',
-                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B)),
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF64748B),
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -1900,9 +2238,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                                 const SizedBox(height: 2),
                                 Text(
                                   rowId != null
-                                      ? (leadName != null ? 'Lead: $leadName (#$rowId)' : 'Lead #$rowId')
+                                      ? (leadName != null
+                                            ? 'Lead: $leadName (#$rowId)'
+                                            : 'Lead #$rowId')
                                       : (_sheet?.title ?? 'All changes'),
-                                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.textSecondary,
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -1910,7 +2253,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B)),
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              color: Color(0xFF64748B),
+                            ),
                             onPressed: () => Navigator.pop(dialogCtx),
                           ),
                         ],
@@ -1928,12 +2274,23 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                           controller: searchCtrl,
                           decoration: InputDecoration(
                             isDense: true,
-                            hintText: 'Search by field, editor name, or value...',
-                            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-                            prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF94A3B8)),
+                            hintText:
+                                'Search by field, editor name, or value...',
+                            hintStyle: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF94A3B8),
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search_rounded,
+                              size: 18,
+                              color: Color(0xFF94A3B8),
+                            ),
                             suffixIcon: searchFilter.isNotEmpty
                                 ? IconButton(
-                                    icon: const Icon(Icons.clear_rounded, size: 16),
+                                    icon: const Icon(
+                                      Icons.clear_rounded,
+                                      size: 16,
+                                    ),
                                     onPressed: () {
                                       searchCtrl.clear();
                                       setDialogState(() => searchFilter = '');
@@ -1941,7 +2298,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                                   )
                                 : null,
                             border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 10,
+                              horizontal: 12,
+                            ),
                           ),
                           onChanged: (val) {
                             setDialogState(() => searchFilter = val);
@@ -1954,38 +2314,52 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       Expanded(
                         child: isLoading && historyItems.isEmpty
                             ? const Center(
-                                child: CircularProgressIndicator(color: AppColors.primary),
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                ),
                               )
                             : filteredList.isEmpty
-                                ? Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.history_toggle_off_rounded, size: 48, color: Colors.grey.shade400),
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          searchFilter.isNotEmpty
-                                              ? 'No matching changes found'
-                                              : 'No edit history recorded yet',
-                                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        const Text(
-                                          'Changes to Name, Number, Country, etc., will be tracked here.',
-                                          style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ],
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.history_toggle_off_rounded,
+                                      size: 48,
+                                      color: Colors.grey.shade400,
                                     ),
-                                  )
-                                : ListView.separated(
-                                    itemCount: filteredList.length,
-                                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                                    itemBuilder: (context, index) {
-                                      final item = filteredList[index];
-                                      return _buildHistoryItemCard(item);
-                                    },
-                                  ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      searchFilter.isNotEmpty
+                                          ? 'No matching changes found'
+                                          : 'No edit history recorded yet',
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    const Text(
+                                      'Changes to Name, Number, Country, etc., will be tracked here.',
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ListView.separated(
+                                itemCount: filteredList.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(height: 10),
+                                itemBuilder: (context, index) {
+                                  final item = filteredList[index];
+                                  return _buildHistoryItemCard(item);
+                                },
+                              ),
                       ),
                     ],
                   ),
@@ -2028,8 +2402,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 radius: 13,
                 backgroundColor: roleBadgeColor.withValues(alpha: 0.15),
                 child: Text(
-                  item.userName.isNotEmpty ? item.userName[0].toUpperCase() : 'U',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: roleBadgeColor),
+                  item.userName.isNotEmpty
+                      ? item.userName[0].toUpperCase()
+                      : 'U',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: roleBadgeColor,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -2038,21 +2418,34 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   children: [
                     Flexible(
                       child: Text(
-                        item.userName.isNotEmpty ? item.userName : 'User #${item.userId}',
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary),
+                        item.userName.isNotEmpty
+                            ? item.userName
+                            : 'User #${item.userId}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: AppColors.textPrimary,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: roleBadgeColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         item.userRole.isNotEmpty ? item.userRole : 'Staff',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: roleBadgeColor),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: roleBadgeColor,
+                        ),
                       ),
                     ),
                   ],
@@ -2062,11 +2455,19 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.access_time_rounded, size: 12, color: Color(0xFF94A3B8)),
+                    const Icon(
+                      Icons.access_time_rounded,
+                      size: 12,
+                      color: Color(0xFF94A3B8),
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       item.displayTime!,
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF64748B)),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF64748B),
+                      ),
                     ),
                   ],
                 ),
@@ -2086,11 +2487,19 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.edit_note_rounded, size: 14, color: AppColors.primary),
+                    const Icon(
+                      Icons.edit_note_rounded,
+                      size: 14,
+                      color: AppColors.primary,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       item.columnName.isNotEmpty ? item.columnName : 'Field',
-                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.primary),
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ],
                 ),
@@ -2098,8 +2507,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               if (item.rowIndex > 0 || item.rowId > 0) ...[
                 const SizedBox(width: 8),
                 Text(
-                  item.rowIndex > 0 ? 'Row #${item.rowIndex}' : 'Lead #${item.rowId}',
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                  item.rowIndex > 0
+                      ? 'Row #${item.rowIndex}'
+                      : 'Lead #${item.rowId}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ],
@@ -2122,15 +2537,23 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     children: [
                       const Text(
                         'OLD VALUE',
-                        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Color(0xFFEF4444)),
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFEF4444),
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         item.oldValue.isNotEmpty ? item.oldValue : '(empty)',
                         style: TextStyle(
                           fontSize: 12,
-                          color: item.oldValue.isNotEmpty ? const Color(0xFFEF4444) : const Color(0xFF94A3B8),
-                          decoration: item.oldValue.isNotEmpty ? TextDecoration.lineThrough : null,
+                          color: item.oldValue.isNotEmpty
+                              ? const Color(0xFFEF4444)
+                              : const Color(0xFF94A3B8),
+                          decoration: item.oldValue.isNotEmpty
+                              ? TextDecoration.lineThrough
+                              : null,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -2140,7 +2563,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 ),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Icon(Icons.arrow_forward_rounded, size: 16, color: Color(0xFF94A3B8)),
+                  child: Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 16,
+                    color: Color(0xFF94A3B8),
+                  ),
                 ),
                 Expanded(
                   child: Column(
@@ -2148,7 +2575,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     children: [
                       const Text(
                         'NEW VALUE',
-                        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Color(0xFF16A34A)),
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF16A34A),
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -2156,7 +2587,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: item.newValue.isNotEmpty ? const Color(0xFF16A34A) : const Color(0xFF94A3B8),
+                          color: item.newValue.isNotEmpty
+                              ? const Color(0xFF16A34A)
+                              : const Color(0xFF94A3B8),
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -2180,24 +2613,42 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     required ValueChanged<String> onConfirmed,
   }) async {
     final cleanVal = currentValue.trim();
-    final bool initialIsCollected = cleanVal.isNotEmpty &&
+    final bool initialIsCollected =
+        cleanVal.isNotEmpty &&
         !cleanVal.toLowerCase().contains('not') &&
         cleanVal != '0';
 
     bool isCollected = initialIsCollected;
     final existingNumber = cleanVal.replaceAll(RegExp(r'[^\d]'), '');
-    final amountController = TextEditingController(text: existingNumber.isNotEmpty ? existingNumber : '');
+    final amountController = TextEditingController(
+      text: existingNumber.isNotEmpty ? existingNumber : '',
+    );
 
     await showDialog(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (dCtx, setDState) {
-            final quickAmounts = ['1000', '2000', '3000', '4000', '5000', '6000', '7000', '8000', '10000'];
+            final quickAmounts = [
+              '1000',
+              '2000',
+              '3000',
+              '4000',
+              '5000',
+              '6000',
+              '7000',
+              '8000',
+              '10000',
+            ];
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
               titlePadding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 8,
+              ),
               actionsPadding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
               title: Row(
                 children: [
@@ -2207,12 +2658,20 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       color: const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF1D4ED8), size: 20),
+                    child: const Icon(
+                      Icons.account_balance_wallet_rounded,
+                      color: Color(0xFF1D4ED8),
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   const Text(
                     'Advance Payment',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
                   ),
                 ],
               ),
@@ -2224,7 +2683,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   children: [
                     const Text(
                       'Choose payment status:',
-                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF475569),
+                      ),
                     ),
                     const SizedBox(height: 10),
 
@@ -2243,10 +2706,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                               duration: const Duration(milliseconds: 150),
                               padding: const EdgeInsets.symmetric(vertical: 11),
                               decoration: BoxDecoration(
-                                color: !isCollected ? const Color(0xFFFEE2E2) : const Color(0xFFF1F5F9),
+                                color: !isCollected
+                                    ? const Color(0xFFFEE2E2)
+                                    : const Color(0xFFF1F5F9),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: !isCollected ? const Color(0xFFEF4444) : const Color(0xFFE2E8F0),
+                                  color: !isCollected
+                                      ? const Color(0xFFEF4444)
+                                      : const Color(0xFFE2E8F0),
                                   width: !isCollected ? 1.5 : 1,
                                 ),
                               ),
@@ -2256,15 +2723,21 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                                   Icon(
                                     Icons.cancel_outlined,
                                     size: 16,
-                                    color: !isCollected ? const Color(0xFFDC2626) : const Color(0xFF64748B),
+                                    color: !isCollected
+                                        ? const Color(0xFFDC2626)
+                                        : const Color(0xFF64748B),
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
                                     'Not Collected',
                                     style: TextStyle(
                                       fontSize: 12.5,
-                                      fontWeight: !isCollected ? FontWeight.w800 : FontWeight.w600,
-                                      color: !isCollected ? const Color(0xFFDC2626) : const Color(0xFF64748B),
+                                      fontWeight: !isCollected
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
+                                      color: !isCollected
+                                          ? const Color(0xFFDC2626)
+                                          : const Color(0xFF64748B),
                                     ),
                                   ),
                                 ],
@@ -2285,10 +2758,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                               duration: const Duration(milliseconds: 150),
                               padding: const EdgeInsets.symmetric(vertical: 11),
                               decoration: BoxDecoration(
-                                color: isCollected ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                                color: isCollected
+                                    ? const Color(0xFFDCFCE7)
+                                    : const Color(0xFFF1F5F9),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: isCollected ? const Color(0xFF22C55E) : const Color(0xFFE2E8F0),
+                                  color: isCollected
+                                      ? const Color(0xFF22C55E)
+                                      : const Color(0xFFE2E8F0),
                                   width: isCollected ? 1.5 : 1,
                                 ),
                               ),
@@ -2298,15 +2775,21 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                                   Icon(
                                     Icons.check_circle_outline_rounded,
                                     size: 16,
-                                    color: isCollected ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+                                    color: isCollected
+                                        ? const Color(0xFF16A34A)
+                                        : const Color(0xFF64748B),
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
                                     'Collected',
                                     style: TextStyle(
                                       fontSize: 12.5,
-                                      fontWeight: isCollected ? FontWeight.w800 : FontWeight.w600,
-                                      color: isCollected ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+                                      fontWeight: isCollected
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
+                                      color: isCollected
+                                          ? const Color(0xFF16A34A)
+                                          : const Color(0xFF64748B),
                                     ),
                                   ),
                                 ],
@@ -2321,32 +2804,74 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       const SizedBox(height: 16),
                       const Text(
                         'Enter Collected Advance Amount:',
-                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF475569),
+                        ),
                       ),
                       const SizedBox(height: 8),
                       TextField(
                         controller: amountController,
                         keyboardType: TextInputType.number,
                         autofocus: true,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
                         decoration: InputDecoration(
                           prefixIcon: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                            child: Text('₹', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 11,
+                            ),
+                            child: Text(
+                              '₹',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF16A34A),
+                              ),
+                            ),
                           ),
-                          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                          prefixIconConstraints: const BoxConstraints(
+                            minWidth: 0,
+                            minHeight: 0,
+                          ),
                           hintText: 'e.g. 2000, 3000, 5000',
-                          hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8), fontWeight: FontWeight.normal),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF16A34A), width: 1.8)),
+                          hintStyle: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF94A3B8),
+                            fontWeight: FontWeight.normal,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFCBD5E1),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF16A34A),
+                              width: 1.8,
+                            ),
+                          ),
                         ),
                         onChanged: (_) => setDState(() {}),
                       ),
                       const SizedBox(height: 10),
                       const Text(
                         'Quick select amount:',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF64748B),
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Wrap(
@@ -2362,20 +2887,31 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                             },
                             borderRadius: BorderRadius.circular(8),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 5,
+                              ),
                               decoration: BoxDecoration(
-                                color: isCurrent ? const Color(0xFFDCFCE7) : const Color(0xFFF8FAFC),
+                                color: isCurrent
+                                    ? const Color(0xFFDCFCE7)
+                                    : const Color(0xFFF8FAFC),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: isCurrent ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0),
+                                  color: isCurrent
+                                      ? const Color(0xFF16A34A)
+                                      : const Color(0xFFE2E8F0),
                                 ),
                               ),
                               child: Text(
                                 '₹$amt',
                                 style: TextStyle(
                                   fontSize: 11.5,
-                                  fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
-                                  color: isCurrent ? const Color(0xFF16A34A) : const Color(0xFF334155),
+                                  fontWeight: isCurrent
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: isCurrent
+                                      ? const Color(0xFF16A34A)
+                                      : const Color(0xFF334155),
                                 ),
                               ),
                             ),
@@ -2404,17 +2940,24 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     onConfirmed(finalVal);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isCollected ? const Color(0xFF16A34A) : const Color(0xFF475569),
+                    backgroundColor: isCollected
+                        ? const Color(0xFF16A34A)
+                        : const Color(0xFF475569),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 10,
+                    ),
                   ),
                   child: Text(
                     !isCollected
                         ? 'Set as Not Collected'
                         : (amountController.text.trim().isNotEmpty
-                            ? 'Set Advance: ₹${amountController.text.trim()}'
-                            : 'Confirm Collected'),
+                              ? 'Set Advance: ₹${amountController.text.trim()}'
+                              : 'Confirm Collected'),
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -2461,7 +3004,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
         return StatefulBuilder(
           builder: (dCtx, setDState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               title: Row(
                 children: [
                   const Icon(Icons.edit_note_rounded, color: AppColors.primary),
@@ -2469,7 +3014,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   Expanded(
                     child: Text(
                       'Edit ${col.columnName}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -2481,7 +3029,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 children: [
                   Text(
                     'Lead: ${row.leadName} (Row #${row.rowIndex})',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -2490,8 +3041,13 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     decoration: InputDecoration(
                       labelText: col.columnName,
                       hintText: 'Enter ${col.columnName}',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ],
@@ -2522,7 +3078,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('${col.columnName} updated successfully.'),
+                                    content: Text(
+                                      '${col.columnName} updated successfully.',
+                                    ),
                                     backgroundColor: AppColors.success,
                                     duration: const Duration(seconds: 2),
                                   ),
@@ -2549,7 +3107,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                           } catch (e) {
                             setDState(() => isSaving = false);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error updating: $e'), backgroundColor: AppColors.error),
+                              SnackBar(
+                                content: Text('Error updating: $e'),
+                                backgroundColor: AppColors.error,
+                              ),
                             );
                           }
                         },
@@ -2558,7 +3119,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     foregroundColor: Colors.white,
                   ),
                   child: isSaving
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
                       : const Text('Save'),
                 ),
               ],
@@ -2595,6 +3163,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   Future<void> _showLeadDetailsDialog(ApiRow row) async {
     await _openLeadDetailsPage(row, editMode: true);
   }
+
   // =========================================================================
   // MAIN BUILD
   // =========================================================================
@@ -2612,7 +3181,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
         backgroundColor: AppColors.background,
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+              color: AppColors.textPrimary,
+            ),
             tooltip: 'Back',
             onPressed: () => _handleBackPress(),
           ),
@@ -2631,7 +3203,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               if (_sheet != null && _sheet!.description.isNotEmpty)
                 Text(
                   _sheet!.description,
-                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -2644,9 +3220,13 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   // DESKTOP WIDESCREEN ACTIONS
                   // Toggle View Button (Cards vs Table)
                   IconButton(
-                    tooltip: _isTableView ? 'Switch to Cards View' : 'Switch to Table View',
+                    tooltip: _isTableView
+                        ? 'Switch to Cards View'
+                        : 'Switch to Table View',
                     icon: Icon(
-                      _isTableView ? Icons.grid_view_rounded : Icons.table_chart_rounded,
+                      _isTableView
+                          ? Icons.grid_view_rounded
+                          : Icons.table_chart_rounded,
                       color: AppColors.primary,
                     ),
                     onPressed: () {
@@ -2657,49 +3237,78 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   ),
                   IconButton(
                     tooltip: 'Refresh',
-                    icon: const Icon(Icons.refresh_rounded, color: AppColors.textPrimary),
+                    icon: const Icon(
+                      Icons.refresh_rounded,
+                      color: AppColors.textPrimary,
+                    ),
                     onPressed: _fetchSheetData,
                   ),
                   if (_isManager) ...[
                     IconButton(
                       tooltip: 'Backup / Export Sheet Data',
-                      icon: const Icon(Icons.cloud_download_rounded, color: AppColors.primary),
-                      onPressed: () => context.go('/backup?sheetId=${widget.sheetId}'),
+                      icon: const Icon(
+                        Icons.cloud_download_rounded,
+                        color: AppColors.primary,
+                      ),
+                      onPressed: () =>
+                          context.go('/backup?sheetId=${widget.sheetId}'),
                     ),
                     IconButton(
                       tooltip: 'Audit / Edit History',
-                      icon: const Icon(Icons.history_rounded, color: AppColors.textPrimary),
+                      icon: const Icon(
+                        Icons.history_rounded,
+                        color: AppColors.textPrimary,
+                      ),
                       onPressed: () => _showEditHistoryDialog(),
                     ),
                   ],
                   if (_isManager) ...[
                     // Manager: Add Lead to Sheet (POST api/add_row)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8.0,
+                        horizontal: 4.0,
+                      ),
                       child: ElevatedButton.icon(
                         onPressed: _showAddLeadDialog,
                         icon: const Icon(Icons.person_add_rounded, size: 16),
-                        label: const Text('Add Lead', style: TextStyle(fontSize: 12)),
+                        label: const Text(
+                          'Add Lead',
+                          style: TextStyle(fontSize: 12),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
                     // Manager: Assign to Staff
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8.0,
+                        horizontal: 4.0,
+                      ),
                       child: OutlinedButton.icon(
                         onPressed: _showAssignToStaffDialog,
-                        icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
-                        label: const Text('Assign Staff', style: TextStyle(fontSize: 12)),
+                        icon: const Icon(
+                          Icons.person_add_alt_1_rounded,
+                          size: 16,
+                        ),
+                        label: const Text(
+                          'Assign Staff',
+                          style: TextStyle(fontSize: 12),
+                        ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.primary,
                           side: const BorderSide(color: AppColors.primary),
                           padding: const EdgeInsets.symmetric(horizontal: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
@@ -2707,21 +3316,32 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
                   // Real-time Auto-Save Cloud Status Indicator
                   Padding(
-                    padding: const EdgeInsets.only(top: 8.0, bottom: 8.0, right: 12.0),
+                    padding: const EdgeInsets.only(
+                      top: 8.0,
+                      bottom: 8.0,
+                      right: 12.0,
+                    ),
                     child: _buildAutoSaveStatusIndicator(),
                   ),
                 ]
               : [
                   // MOBILE ACTIONS: Auto-Save Status Indicator
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8.0,
+                      horizontal: 4.0,
+                    ),
                     child: _buildAutoSaveStatusIndicator(),
                   ),
 
                   IconButton(
-                    tooltip: _isTableView ? 'Switch to Cards' : 'Switch to Table',
+                    tooltip: _isTableView
+                        ? 'Switch to Cards'
+                        : 'Switch to Table',
                     icon: Icon(
-                      _isTableView ? Icons.grid_view_rounded : Icons.table_chart_rounded,
+                      _isTableView
+                          ? Icons.grid_view_rounded
+                          : Icons.table_chart_rounded,
                       color: AppColors.primary,
                       size: 22,
                     ),
@@ -2733,21 +3353,36 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   ),
                   IconButton(
                     tooltip: 'Refresh',
-                    icon: const Icon(Icons.refresh_rounded, color: AppColors.textPrimary, size: 22),
+                    icon: const Icon(
+                      Icons.refresh_rounded,
+                      color: AppColors.textPrimary,
+                      size: 22,
+                    ),
                     onPressed: _fetchSheetData,
                   ),
                   if (_isManager)
                     IconButton(
                       tooltip: 'Edit History',
-                      icon: const Icon(Icons.history_rounded, color: AppColors.textPrimary, size: 22),
+                      icon: const Icon(
+                        Icons.history_rounded,
+                        color: AppColors.textPrimary,
+                        size: 22,
+                      ),
                       onPressed: () => _showEditHistoryDialog(),
                     ),
                   if (_isManager || _isExecutive)
                     PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert_rounded, color: AppColors.textPrimary, size: 22),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      icon: const Icon(
+                        Icons.more_vert_rounded,
+                        color: AppColors.textPrimary,
+                        size: 22,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       onSelected: (val) {
-                        if (val == 'backup') context.go('/backup?sheetId=${widget.sheetId}');
+                        if (val == 'backup')
+                          context.go('/backup?sheetId=${widget.sheetId}');
                         if (val == 'history') _showEditHistoryDialog();
                         if (val == 'add_lead') _showAddLeadDialog();
                         if (val == 'assign_staff') _showAssignToStaffDialog();
@@ -2758,9 +3393,19 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                             value: 'backup',
                             child: Row(
                               children: [
-                                Icon(Icons.cloud_download_rounded, size: 18, color: AppColors.primary),
+                                Icon(
+                                  Icons.cloud_download_rounded,
+                                  size: 18,
+                                  color: AppColors.primary,
+                                ),
                                 SizedBox(width: 10),
-                                Text('Backup / Export', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                Text(
+                                  'Backup / Export',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -2768,9 +3413,19 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                             value: 'history',
                             child: Row(
                               children: [
-                                Icon(Icons.history_rounded, size: 18, color: AppColors.primary),
+                                Icon(
+                                  Icons.history_rounded,
+                                  size: 18,
+                                  color: AppColors.primary,
+                                ),
                                 SizedBox(width: 10),
-                                Text('Audit / History', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                Text(
+                                  'Audit / History',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -2780,9 +3435,19 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                             value: 'add_lead',
                             child: Row(
                               children: [
-                                Icon(Icons.person_add_rounded, size: 18, color: AppColors.primary),
+                                Icon(
+                                  Icons.person_add_rounded,
+                                  size: 18,
+                                  color: AppColors.primary,
+                                ),
                                 SizedBox(width: 10),
-                                Text('Add Lead', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                Text(
+                                  'Add Lead',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -2790,9 +3455,19 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                             value: 'assign_staff',
                             child: Row(
                               children: [
-                                Icon(Icons.person_add_alt_1_outlined, size: 18, color: AppColors.primary),
+                                Icon(
+                                  Icons.person_add_alt_1_outlined,
+                                  size: 18,
+                                  color: AppColors.primary,
+                                ),
                                 SizedBox(width: 10),
-                                Text('Assign Staff', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                Text(
+                                  'Assign Staff',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -2801,7 +3476,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     ),
                 ],
         ),
-        body: SystemModeService.instance.shouldHideDataForUser(isManager: _isManager)
+        body:
+            SystemModeService.instance.shouldHideDataForUser(
+              isManager: _isManager,
+            )
             ? Center(
                 child: Container(
                   padding: const EdgeInsets.all(28),
@@ -2821,17 +3499,29 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                           color: AppColors.primary.withValues(alpha: 0.08),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.table_chart_outlined, size: 32, color: AppColors.primary),
+                        child: const Icon(
+                          Icons.table_chart_outlined,
+                          size: 32,
+                          color: AppColors.primary,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       const Text(
                         'No Data Found',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       const Text(
                         'There are no records found for this sheet at the moment.',
-                        style: TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF64748B),
+                          height: 1.4,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 18),
@@ -2845,53 +3535,63 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 ),
               )
             : _isLoading
-                ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      margin: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.red.shade100),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 48),
-                          const SizedBox(height: 12),
-                          Text(_error!, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _fetchSheetData,
-                            child: const Text('Retry Loading'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : Column(
+            ? Center(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  margin: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.red.shade100),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (isDesktop) ...[
-                        // Top Sheet KPI Dashboard Overview (Counts & Metrics on Desktop)
-                        _buildSheetStatsOverview(isDesktop),
-
-                        // Desktop Search & Filter Bar (Side-by-side)
-                        _buildDesktopSearchFilterBar(),
-                      ] else ...[
-                        // Mobile Adaptive Search & Filter Section (Full-width search + counts chips)
-                        _buildMobileTopSection(),
-                      ],
-
-                      // Main View (Cards View or Excel Table View)
-                      Expanded(
-                        child: _isTableView
-                            ? _buildExcelTableView()
-                            : _buildManagerCardsView(isDesktop),
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        color: AppColors.error,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        _error!,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _fetchSheetData,
+                        child: const Text('Retry Loading'),
                       ),
                     ],
                   ),
+                ),
+              )
+            : Column(
+                children: [
+                  if (isDesktop) ...[
+                    // Top Sheet KPI Dashboard Overview (Counts & Metrics on Desktop)
+                    _buildSheetStatsOverview(isDesktop),
+
+                    // Desktop Search & Filter Bar (Side-by-side)
+                    _buildDesktopSearchFilterBar(),
+                  ] else ...[
+                    // Mobile Adaptive Search & Filter Section (Full-width search + counts chips)
+                    _buildMobileTopSection(),
+                  ],
+
+                  // Main View (Cards View or Excel Table View)
+                  Expanded(
+                    child: _isTableView
+                        ? _buildExcelTableView(isDesktop)
+                        : _buildManagerCardsView(isDesktop),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -2913,10 +3613,20 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search leads in this sheet...',
-                hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                prefixIcon: const Icon(Icons.search_rounded, size: 18, color: AppColors.primary),
+                hintStyle: const TextStyle(
+                  color: Color(0xFF94A3B8),
+                  fontSize: 13,
+                ),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 12,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -2973,11 +3683,22 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search leads in this sheet...',
-                hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.primary),
+                hintStyle: const TextStyle(
+                  color: Color(0xFF94A3B8),
+                  fontSize: 13,
+                ),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  size: 20,
+                  color: AppColors.primary,
+                ),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.cancel_rounded, size: 18, color: Color(0xFF94A3B8)),
+                        icon: const Icon(
+                          Icons.cancel_rounded,
+                          size: 18,
+                          color: Color(0xFF94A3B8),
+                        ),
                         onPressed: () {
                           _searchController.clear();
                           setState(() => _searchQuery = '');
@@ -2985,7 +3706,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       )
                     : null,
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 14,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -2996,7 +3720,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 1.5,
+                  ),
                 ),
                 filled: true,
                 fillColor: const Color(0xFFF8FAFC),
@@ -3022,10 +3749,15 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   ),
                 ),
                 InkWell(
-                  onTap: () => setState(() => _showAnalyticsGraph = !_showAnalyticsGraph),
+                  onTap: () => setState(
+                    () => _showAnalyticsGraph = !_showAnalyticsGraph,
+                  ),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: _showAnalyticsGraph
                           ? AppColors.primary
@@ -3038,7 +3770,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                         Icon(
                           Icons.auto_graph_rounded,
                           size: 13,
-                          color: _showAnalyticsGraph ? Colors.white : AppColors.primary,
+                          color: _showAnalyticsGraph
+                              ? Colors.white
+                              : AppColors.primary,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -3046,7 +3780,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: _showAnalyticsGraph ? Colors.white : AppColors.primary,
+                            color: _showAnalyticsGraph
+                                ? Colors.white
+                                : AppColors.primary,
                           ),
                         ),
                       ],
@@ -3056,27 +3792,6 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               ],
             ),
           ),
-
-          if (_showAnalyticsGraph) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
-              child: AnalyticsProgressGraph(
-                totalLeads: _sheetTotalCount,
-                newCount: _sheetNewCount,
-                inProgressCount: _sheetInProgressCount,
-                closedCount: _sheetClosedCount,
-                totalPipelineAmount: _sheetTotalPipelineAmount,
-                monthlyData: _sheetMonthlyData,
-                title: 'Sheet Progress Analysis',
-                subtitle: 'Lead flow & win rate overview',
-                selectedStatus: _selectedStatusFilter,
-                onStatusFilter: (statusKey) {
-                  setState(() => _selectedStatusFilter = statusKey);
-                },
-                initialExpanded: true,
-              ),
-            ),
-          ],
 
           // Horizontal Filter Chips with Status Counts
           SingleChildScrollView(
@@ -3114,7 +3829,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 if (_sheetTotalPipelineAmount > 0) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE0F2FE),
                       borderRadius: BorderRadius.circular(20),
@@ -3123,11 +3841,19 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.currency_rupee_rounded, size: 13, color: Color(0xFF0369A1)),
+                        const Icon(
+                          Icons.currency_rupee_rounded,
+                          size: 13,
+                          color: Color(0xFF0369A1),
+                        ),
                         const SizedBox(width: 2),
                         Text(
                           '₹$_sheetTotalPipelineAmount Pipeline',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0369A1)),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF0369A1),
+                          ),
                         ),
                       ],
                     ),
@@ -3136,7 +3862,6 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               ],
             ),
           ),
-
         ],
       ),
     );
@@ -3189,9 +3914,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               ),
               const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 1.5,
+                ),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.white.withValues(alpha: 0.25) : color.withValues(alpha: 0.12),
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.25)
+                      : color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -3213,14 +3943,24 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   Widget _buildStatusChip(String label, String value) {
     final isSelected = _selectedStatusFilter == value;
     return ChoiceChip(
-      label: Text(label, style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500)),
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+        ),
+      ),
       selected: isSelected,
       selectedColor: AppColors.primary.withValues(alpha: 0.1),
-      labelStyle: TextStyle(color: isSelected ? AppColors.primary : AppColors.textSecondary),
+      labelStyle: TextStyle(
+        color: isSelected ? AppColors.primary : AppColors.textSecondary,
+      ),
       checkmarkColor: AppColors.primary,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0)),
+        side: BorderSide(
+          color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
+        ),
       ),
       onSelected: (selected) {
         if (selected) {
@@ -3290,12 +4030,16 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
           if (isDesktop)
             Row(
               children: [
-                ...statItems.map((c) => Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: c,
-                  ),
-                )).toList(),
+                ...statItems
+                    .map(
+                      (c) => Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 5),
+                          child: c,
+                        ),
+                      ),
+                    )
+                    .toList(),
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: () {
@@ -3304,17 +4048,27 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     });
                   },
                   icon: Icon(
-                    _showAnalyticsGraph ? Icons.keyboard_arrow_up_rounded : Icons.auto_graph_rounded,
+                    _showAnalyticsGraph
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.auto_graph_rounded,
                     size: 16,
                   ),
                   label: Text(
                     _showAnalyticsGraph ? 'Hide Graph' : 'Analytics Graph',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _showAnalyticsGraph ? const Color(0xFF0F172A) : AppColors.primary,
+                    backgroundColor: _showAnalyticsGraph
+                        ? const Color(0xFF0F172A)
+                        : AppColors.primary,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -3329,7 +4083,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 scrollDirection: Axis.horizontal,
                 itemCount: statItems.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (_, i) => SizedBox(width: 150, child: statItems[i]),
+                itemBuilder: (_, i) =>
+                    SizedBox(width: 150, child: statItems[i]),
               ),
             ),
           if (_showAnalyticsGraph && isDesktop) ...[
@@ -3342,7 +4097,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               totalPipelineAmount: _sheetTotalPipelineAmount,
               monthlyData: _sheetMonthlyData,
               title: '${_sheet!.title} · Progress Analysis',
-              subtitle: 'Lead progress breakdown, conversion efficiency & status filter',
+              subtitle:
+                  'Lead progress breakdown, conversion efficiency & status filter',
               selectedStatus: _selectedStatusFilter,
               onStatusFilter: (statusKey) {
                 setState(() => _selectedStatusFilter = statusKey);
@@ -3385,7 +4141,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: isSelected ? color.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.02),
+                color: isSelected
+                    ? color.withValues(alpha: 0.12)
+                    : Colors.black.withValues(alpha: 0.02),
                 blurRadius: isSelected ? 8 : 4,
                 offset: const Offset(0, 2),
               ),
@@ -3449,74 +4207,122 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
   // =========================================================================
   // VIEW A: MANAGER BOX / CARDS VIEW (Clean, Modern, Box-Style Lead Cards)
   // =========================================================================
+  // =========================================================================
+  // SHEET ANALYTICS PROGRESS GRAPH WIDGET HELPER
+  // =========================================================================
+  Widget _buildSheetAnalyticsProgressGraph() {
+    return AnalyticsProgressGraph(
+      totalLeads: _sheetTotalCount,
+      newCount: _sheetNewCount,
+      inProgressCount: _sheetInProgressCount,
+      closedCount: _sheetClosedCount,
+      totalPipelineAmount: _sheetTotalPipelineAmount,
+      monthlyData: _sheetMonthlyData,
+      title: 'Sheet Progress Analysis',
+      subtitle: 'Lead flow & win rate overview',
+      selectedStatus: _selectedStatusFilter,
+      onStatusFilter: (statusKey) {
+        setState(() => _selectedStatusFilter = statusKey);
+      },
+      initialExpanded: true,
+    );
+  }
+
+  // =========================================================================
+  // MANAGER CARDS VIEW (Clean, responsive cards view for managers)
+  // =========================================================================
   Widget _buildManagerCardsView(bool isDesktop) {
     final rows = _filteredRows;
 
     if (rows.isEmpty) {
-      final hasActiveFilter = _searchQuery.trim().isNotEmpty || _selectedStatusFilter != 'all';
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                hasActiveFilter ? Icons.search_off_rounded : Icons.inbox_outlined,
-                size: 56,
-                color: Colors.grey.shade400,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                hasActiveFilter
-                    ? (_searchQuery.trim().isNotEmpty
+      final hasActiveFilter =
+          _searchQuery.trim().isNotEmpty || _selectedStatusFilter != 'all';
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (_showAnalyticsGraph && !isDesktop) ...[
+              _buildSheetAnalyticsProgressGraph(),
+              const SizedBox(height: 20),
+            ],
+            Icon(
+              hasActiveFilter
+                  ? Icons.search_off_rounded
+                  : Icons.inbox_outlined,
+              size: 56,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              hasActiveFilter
+                  ? (_searchQuery.trim().isNotEmpty
                         ? 'No leads matching "$_searchQuery"'
                         : 'No leads with status "$_selectedStatusFilter"')
-                    : 'No leads matching criteria',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                  : 'No leads matching criteria',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
               ),
-              const SizedBox(height: 6),
-              Text(
-                hasActiveFilter ? 'Try clearing filters or search query.' : 'Try clearing search filters or add new leads.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              hasActiveFilter
+                  ? 'Try clearing filters or search query.'
+                  : 'Try clearing search filters or add new leads.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
               ),
-              if (hasActiveFilter) ...[
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _searchQuery = '';
-                      _searchController.clear();
-                      _selectedStatusFilter = 'all';
-                    });
-                  },
-                  icon: const Icon(Icons.filter_alt_off_rounded, size: 16),
-                  label: const Text('Clear All Filters'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            if (hasActiveFilter) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _searchQuery = '';
+                    _searchController.clear();
+                    _selectedStatusFilter = 'all';
+                  });
+                },
+                icon: const Icon(Icons.filter_alt_off_rounded, size: 16),
+                label: const Text('Clear All Filters'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-              ],
-              if (_isManager) ...[
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  onPressed: _showAddLeadDialog,
-                  icon: const Icon(Icons.person_add_rounded, size: 18),
-                  label: const Text('Add Candidate Lead'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ],
+              ),
             ],
-          ),
+            if (_isManager) ...[
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: _showAddLeadDialog,
+                icon: const Icon(Icons.person_add_rounded, size: 18),
+                label: const Text('Add Candidate Lead'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       );
     }
@@ -3531,7 +4337,12 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
           ? GridView.builder(
               padding: const EdgeInsets.only(bottom: 24),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: ResponsiveLayout.getGridCrossAxisCount(context, mobile: 1, tablet: 2, desktop: 3),
+                crossAxisCount: ResponsiveLayout.getGridCrossAxisCount(
+                  context,
+                  mobile: 1,
+                  tablet: 2,
+                  desktop: 3,
+                ),
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
                 mainAxisExtent: 180,
@@ -3541,12 +4352,26 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 return _buildLeadCard(rows[index]);
               },
             )
-          : ListView.separated(
+          : ListView.builder(
               padding: const EdgeInsets.only(bottom: 40),
-              itemCount: rows.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
+              itemCount: rows.length + (_showAnalyticsGraph ? 1 : 0),
               itemBuilder: (context, index) {
-                return _buildLeadCard(rows[index]);
+                if (_showAnalyticsGraph) {
+                  if (index == 0) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _buildSheetAnalyticsProgressGraph(),
+                    );
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildLeadCard(rows[index - 1]),
+                  );
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildLeadCard(rows[index]),
+                );
               },
             ),
     );
@@ -3559,7 +4384,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     final status = row.status;
 
     // Optional executive & accounts fields preview
-    final workingAmount = row.data['Working Amount'] ?? row.data['working_amount'] ?? '';
+    final workingAmount =
+        row.data['Working Amount'] ?? row.data['working_amount'] ?? '';
     final agencyName = row.data['Agency Name'] ?? row.data['agency_name'] ?? '';
 
     Color statusColor;
@@ -3567,7 +4393,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
       statusColor = const Color(0xFF3B82F6);
     } else if (status.toLowerCase().contains('progress')) {
       statusColor = const Color(0xFFF59E0B);
-    } else if (status.toLowerCase().contains('closed') || status.toLowerCase().contains('won')) {
+    } else if (status.toLowerCase().contains('closed') ||
+        status.toLowerCase().contains('won')) {
       statusColor = AppColors.success;
     } else {
       statusColor = const Color(0xFF64748B);
@@ -3603,8 +4430,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     radius: 20,
                     backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                     child: Text(
-                      leadName.isNotEmpty ? leadName.substring(0, 1).toUpperCase() : 'L',
-                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 15),
+                      leadName.isNotEmpty
+                          ? leadName.substring(0, 1).toUpperCase()
+                          : 'L',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -3614,28 +4447,44 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       children: [
                         Text(
                           leadName,
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textPrimary),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         if (phone.isNotEmpty)
                           Text(
                             phone,
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12.5,
+                            ),
                           ),
                       ],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+                      border: Border.all(
+                        color: statusColor.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Text(
                       status.toUpperCase(),
-                      style: TextStyle(color: statusColor, fontWeight: FontWeight.w800, fontSize: 10.5),
+                      style: TextStyle(
+                        color: statusColor,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 10.5,
+                      ),
                     ),
                   ),
                 ],
@@ -3647,7 +4496,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 children: [
                   if (country.isNotEmpty) ...[
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(6),
@@ -3655,9 +4507,20 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.public_rounded, size: 12, color: AppColors.textSecondary),
+                          const Icon(
+                            Icons.public_rounded,
+                            size: 12,
+                            color: AppColors.textSecondary,
+                          ),
                           const SizedBox(width: 4),
-                          Text(country, style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+                          Text(
+                            country,
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -3665,14 +4528,21 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   ],
                   if (workingAmount.toString().isNotEmpty) ...[
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFEF3C7),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         '₹$workingAmount',
-                        style: const TextStyle(fontSize: 11.5, color: Color(0xFFB45309), fontWeight: FontWeight.w700),
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: Color(0xFFB45309),
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -3681,7 +4551,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     Expanded(
                       child: Text(
                         agencyName.toString(),
-                        style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.textSecondary,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -3696,7 +4569,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 children: [
                   Text(
                     'Lead #${row.id} • Row ${row.rowIndex}',
-                    style: const TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      color: Color(0xFF94A3B8),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   Row(
                     children: [
@@ -3704,7 +4581,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                         onTap: () => _startInlineRowEdit(row),
                         borderRadius: BorderRadius.circular(6),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(6),
@@ -3712,19 +4592,36 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.edit_outlined, size: 13, color: AppColors.primary),
+                              Icon(
+                                Icons.edit_outlined,
+                                size: 13,
+                                color: AppColors.primary,
+                              ),
                               SizedBox(width: 4),
-                              Text('Edit', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                              Text(
+                                'Edit',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                       ),
                       if (_isManager) ...[
                         InkWell(
-                          onTap: () => _showEditHistoryDialog(rowId: row.id, leadName: row.leadName),
+                          onTap: () => _showEditHistoryDialog(
+                            rowId: row.id,
+                            leadName: row.leadName,
+                          ),
                           borderRadius: BorderRadius.circular(6),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF1F5F9),
                               borderRadius: BorderRadius.circular(6),
@@ -3732,9 +4629,20 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.history_rounded, size: 13, color: Color(0xFF64748B)),
+                                Icon(
+                                  Icons.history_rounded,
+                                  size: 13,
+                                  color: Color(0xFF64748B),
+                                ),
                                 SizedBox(width: 4),
-                                Text('History', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+                                Text(
+                                  'History',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -3746,7 +4654,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                         onTap: () => _openLeadDetailsPage(row, editMode: false),
                         borderRadius: BorderRadius.circular(6),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(6),
@@ -3754,9 +4665,20 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text('Full Details', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                              Text(
+                                'Full Details',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                ),
+                              ),
                               SizedBox(width: 4),
-                              Icon(Icons.arrow_forward_rounded, size: 13, color: AppColors.primary),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 13,
+                                color: AppColors.primary,
+                              ),
                             ],
                           ),
                         ),
@@ -3790,16 +4712,24 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     }
     final colLower = col.columnName.trim().toLowerCase();
     final keyLower = col.columnKey.trim().toLowerCase();
-    if (colLower == 'status' || keyLower == 'status' || colLower.contains('status') || keyLower.contains('status')) {
+    if (colLower == 'status' ||
+        keyLower == 'status' ||
+        colLower.contains('status') ||
+        keyLower.contains('status')) {
       return true;
     }
-    return col.columnType.trim().toLowerCase() == 'dropdown' || col.options.isNotEmpty;
+    return col.columnType.trim().toLowerCase() == 'dropdown' ||
+        col.options.isNotEmpty;
   }
 
   List<String> _getDropdownOptions(ApiColumn col, [String? currentVal]) {
     final colLower = col.columnName.trim().toLowerCase();
     final keyLower = col.columnKey.trim().toLowerCase();
-    final isStatus = colLower == 'status' || keyLower == 'status' || colLower.contains('status') || keyLower.contains('status');
+    final isStatus =
+        colLower == 'status' ||
+        keyLower == 'status' ||
+        colLower.contains('status') ||
+        keyLower.contains('status');
 
     List<String> result = [];
     if (isStatus) {
@@ -3818,7 +4748,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     }
 
     if (currentVal != null && currentVal.trim().isNotEmpty) {
-      final formatted = isStatus ? _formatStatusLabel(currentVal) : currentVal.trim();
+      final formatted = isStatus
+          ? _formatStatusLabel(currentVal)
+          : currentVal.trim();
       if (!result.any((r) => r.toLowerCase() == formatted.toLowerCase())) {
         result.add(formatted);
       }
@@ -3837,7 +4769,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     if (raw.isEmpty) return 'New';
     return raw
         .split(' ')
-        .map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '')
+        .map(
+          (w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '',
+        )
         .join(' ');
   }
 
@@ -3845,24 +4779,37 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     final lower = status.toLowerCase();
     if (lower.contains('new')) return const Color(0xFF1D4ED8); // Blue
     if (lower.contains('progress')) return const Color(0xFFD97706); // Amber
-    if (lower.contains('closed') || lower.contains('won')) return const Color(0xFF16A34A); // Green
-    if (lower.contains('lost') || lower.contains('reject')) return const Color(0xFFDC2626); // Red
+    if (lower.contains('closed') || lower.contains('won'))
+      return const Color(0xFF16A34A); // Green
+    if (lower.contains('lost') || lower.contains('reject'))
+      return const Color(0xFFDC2626); // Red
     return const Color(0xFF475569); // Slate
   }
 
   Color _getStatusBgColor(String status) {
     final lower = status.toLowerCase();
     if (lower.contains('new')) return const Color(0xFFEFF6FF); // Light blue
-    if (lower.contains('progress')) return const Color(0xFFFEF3C7); // Light amber
-    if (lower.contains('closed') || lower.contains('won')) return const Color(0xFFDCFCE7); // Light green
-    if (lower.contains('lost') || lower.contains('reject')) return const Color(0xFFFEE2E2); // Light red
+    if (lower.contains('progress'))
+      return const Color(0xFFFEF3C7); // Light amber
+    if (lower.contains('closed') || lower.contains('won'))
+      return const Color(0xFFDCFCE7); // Light green
+    if (lower.contains('lost') || lower.contains('reject'))
+      return const Color(0xFFFEE2E2); // Light red
     return const Color(0xFFF1F5F9); // Light slate
   }
 
-  Future<void> _quickUpdateRowDropdown(ApiRow row, ApiColumn col, String newValue) async {
+  Future<void> _quickUpdateRowDropdown(
+    ApiRow row,
+    ApiColumn col,
+    String newValue,
+  ) async {
     final colLower = col.columnName.trim().toLowerCase();
     final keyLower = col.columnKey.trim().toLowerCase();
-    final isStatus = colLower == 'status' || keyLower == 'status' || colLower.contains('status') || keyLower.contains('status');
+    final isStatus =
+        colLower == 'status' ||
+        keyLower == 'status' ||
+        colLower.contains('status') ||
+        keyLower.contains('status');
 
     final Map<String, dynamic> updatedData = Map.from(row.data);
     updatedData[col.columnName] = newValue;
@@ -3908,7 +4855,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
         _autoSaveStatusNotifier.value = 'Save failed';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response['message'] ?? 'Failed to update ${col.columnName}.'),
+            content: Text(
+              response['message'] ?? 'Failed to update ${col.columnName}.',
+            ),
             backgroundColor: AppColors.error,
           ),
         );
@@ -3937,12 +4886,15 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     final options = _getDropdownOptions(col, currentValue);
     final displayVal = isStatus
         ? _formatStatusLabel(currentValue.isNotEmpty ? currentValue : 'New')
-        : (currentValue.isNotEmpty ? currentValue : (options.isNotEmpty ? options.first : ''));
+        : (currentValue.isNotEmpty
+              ? currentValue
+              : (options.isNotEmpty ? options.first : ''));
 
     final isSelected = (String opt) {
       if (isStatus) {
         return opt.toLowerCase() == displayVal.toLowerCase() ||
-               opt.toLowerCase().replaceAll(' ', '_') == currentValue.toLowerCase();
+            opt.toLowerCase().replaceAll(' ', '_') ==
+                currentValue.toLowerCase();
       }
       return opt.toLowerCase() == currentValue.toLowerCase();
     };
@@ -3993,7 +4945,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: active ? FontWeight.bold : FontWeight.w500,
-                      color: active ? (isStatus ? _getStatusColor(opt) : AppColors.primary) : const Color(0xFF1E293B),
+                      color: active
+                          ? (isStatus
+                                ? _getStatusColor(opt)
+                                : AppColors.primary)
+                          : const Color(0xFF1E293B),
                     ),
                   ),
                 ),
@@ -4018,7 +4974,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     ? Align(
                         alignment: Alignment.centerLeft,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2.5,
+                          ),
                           decoration: BoxDecoration(
                             color: _getStatusBgColor(displayVal),
                             borderRadius: BorderRadius.circular(4),
@@ -4039,7 +4998,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                         displayVal.isNotEmpty ? displayVal : 'Select...',
                         style: TextStyle(
                           fontSize: 12,
-                          color: displayVal.isNotEmpty ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
+                          color: displayVal.isNotEmpty
+                              ? const Color(0xFF0F172A)
+                              : const Color(0xFF94A3B8),
                           fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,
@@ -4069,7 +5030,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     if (nameLower.contains('candidate') || nameLower.contains('student')) {
       width = math.max(width, 210.0);
     }
-    if (nameLower.contains('payment') || nameLower.contains('collected') || nameLower.contains('company')) {
+    if (nameLower.contains('payment') ||
+        nameLower.contains('collected') ||
+        nameLower.contains('company')) {
       width = math.max(width, 205.0);
     }
     if (nameLower.contains('agency') || nameLower.contains('description')) {
@@ -4204,7 +5167,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 child: Row(
                   children: [
                     Container(
@@ -4213,15 +5179,31 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                         color: const Color(0xFF16A34A).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.calculate_rounded, color: Color(0xFF16A34A), size: 22),
+                      child: const Icon(
+                        Icons.calculate_rounded,
+                        color: Color(0xFF16A34A),
+                        size: 22,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Excel Column Calculations', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-                          Text('Live Sum, Average & Counts for all amount columns', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                          Text(
+                            'Excel Column Calculations',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 17,
+                            ),
+                          ),
+                          Text(
+                            'Live Sum, Average & Counts for all amount columns',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -4235,7 +5217,12 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               const Divider(height: 1),
               Expanded(
                 child: numericCols.isEmpty
-                    ? const Center(child: Text('No amount or numeric columns found in this sheet.', style: TextStyle(color: Color(0xFF64748B))))
+                    ? const Center(
+                        child: Text(
+                          'No amount or numeric columns found in this sheet.',
+                          style: TextStyle(color: Color(0xFF64748B)),
+                        ),
+                      )
                     : ListView.separated(
                         padding: const EdgeInsets.all(16),
                         itemCount: numericCols.length,
@@ -4246,14 +5233,18 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                           final avg = _calculateColumnAvg(col, rows);
                           final minVal = _calculateColumnMin(col, rows);
                           final maxVal = _calculateColumnMax(col, rows);
-                          final count = rows.where((r) => r.getValue(col).trim().isNotEmpty).length;
+                          final count = rows
+                              .where((r) => r.getValue(col).trim().isNotEmpty)
+                              .length;
 
                           return Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF8FAFC),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -4263,18 +5254,29 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                                     Expanded(
                                       child: Text(
                                         col.columnName,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: Color(0xFF0F172A)),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14.5,
+                                          color: Color(0xFF0F172A),
+                                        ),
                                       ),
                                     ),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFFDCFCE7),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
                                         'SUM: ${_formatCurrency(sum)}',
-                                        style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF15803D), fontSize: 13),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          color: Color(0xFF15803D),
+                                          fontSize: 13,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -4301,7 +5303,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                                     Expanded(
                                       child: _buildFormulaMetricTile(
                                         label: 'Highest',
-                                        value: maxVal != null ? _formatCurrency(maxVal) : '₹0',
+                                        value: maxVal != null
+                                            ? _formatCurrency(maxVal)
+                                            : '₹0',
                                         icon: Icons.arrow_upward_rounded,
                                       ),
                                     ),
@@ -4320,7 +5324,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     );
   }
 
-  Widget _buildFormulaMetricTile({required String label, required String value, required IconData icon}) {
+  Widget _buildFormulaMetricTile({
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
@@ -4335,13 +5343,24 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
             children: [
               Icon(icon, size: 12, color: const Color(0xFF64748B)),
               const SizedBox(width: 4),
-              Text(label, style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  color: Color(0xFF64748B),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 2),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF1E293B)),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              color: Color(0xFF1E293B),
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -4367,7 +5386,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 top: BorderSide(color: Color(0xFF94A3B8), width: 1.5),
               ),
             ),
-            child: const Text('∑', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A))),
+            child: const Text(
+              '∑',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
+                color: Color(0xFF0F172A),
+              ),
+            ),
           ),
 
           // Each Column Calculation Box
@@ -4378,16 +5404,22 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
             if (isNumeric) {
               final sum = _calculateColumnSum(col, rows);
               final avg = _calculateColumnAvg(col, rows);
-              final filledCount = rows.where((r) => r.getValue(col).trim().isNotEmpty).length;
+              final filledCount = rows
+                  .where((r) => r.getValue(col).trim().isNotEmpty)
+                  .length;
               final sumStr = _formatCurrency(sum);
               final avgStr = _formatCurrency(avg);
 
               return Tooltip(
-                message: '${col.columnName}\nSUM: $sumStr\nAVERAGE: $avgStr\nCOUNT: $filledCount',
+                message:
+                    '${col.columnName}\nSUM: $sumStr\nAVERAGE: $avgStr\nCOUNT: $filledCount',
                 child: Container(
                   width: width,
                   height: 40,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: const BoxDecoration(
                     color: Color(0xFFF1F5F9),
                     border: Border(
@@ -4402,29 +5434,44 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          const Text('∑ ', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: Color(0xFF16A34A))),
+                          const Text(
+                            '∑ ',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 11,
+                              color: Color(0xFF16A34A),
+                            ),
+                          ),
                           Flexible(
                             child: Text(
                               sumStr,
-                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFF0F172A)),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                                color: Color(0xFF0F172A),
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
                       ),
-                      Text(
-                        'Avg: $avgStr',
-                        style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      // Text(
+                      //   'Avg: $avgStr',
+                      //   style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                      //   overflow: TextOverflow.ellipsis,
+                      // ),
                     ],
                   ),
                 ),
               );
             }
 
-            final filledCount = rows.where((r) => r.getValue(col).trim().isNotEmpty).length;
-            final isNameCol = col.columnName.trim().toLowerCase() == 'name' || col.columnKey.toLowerCase() == 'name';
+            final filledCount = rows
+                .where((r) => r.getValue(col).trim().isNotEmpty)
+                .length;
+            final isNameCol =
+                col.columnName.trim().toLowerCase() == 'name' ||
+                col.columnKey.toLowerCase() == 'name';
 
             return Container(
               width: width,
@@ -4441,12 +5488,20 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               child: isNameCol
                   ? Text(
                       'TOTAL (${rows.length} Leads)',
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: Color(0xFF475569)),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11,
+                        color: Color(0xFF475569),
+                      ),
                       overflow: TextOverflow.ellipsis,
                     )
                   : Text(
                       filledCount > 0 ? 'Count: $filledCount' : '',
-                      style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
             );
@@ -4465,7 +5520,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
             ),
             child: Text(
               '${rows.length} rows',
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)),
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 11,
+                color: Color(0xFF64748B),
+              ),
             ),
           ),
         ],
@@ -4473,7 +5532,7 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     );
   }
 
-  Widget _buildExcelTableView() {
+  Widget _buildExcelTableView(bool isDesktop) {
     if (_sheet == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -4482,10 +5541,21 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     final cols = _sheet!.columns;
 
     // Google Sheets style: Displays data rows PLUS empty rows filling the full page (at least 35 rows)
-    final totalRowCount = math.max(rows.length + (_isAddingInlineRow ? 22 : 20), 35);
+    final totalRowCount = math.max(
+      rows.length + (_isAddingInlineRow ? 22 : 20),
+      35,
+    );
 
     return Column(
       children: [
+        if (_showAnalyticsGraph && !isDesktop)
+          Container(
+            constraints: const BoxConstraints(maxHeight: 380),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+              child: _buildSheetAnalyticsProgressGraph(),
+            ),
+          ),
         // Google Sheets Clean Top Toolbar
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -4506,12 +5576,23 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                             _handleEmptyCellTap('');
                           },
                           icon: const Icon(Icons.add_rounded, size: 16),
-                          label: const Text('Add Row', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                          label: const Text(
+                            'Add Row',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF16A34A),
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                             elevation: 0,
                           ),
                         ),
@@ -4519,7 +5600,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       ],
                       const Text(
                         '⚡ Reactive Grid — Click any cell to edit • Changes auto-save automatically in background',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -4530,12 +5615,20 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
               ElevatedButton.icon(
                 onPressed: () => _showExcelCalculationsModal(cols, rows),
                 icon: const Icon(Icons.calculate_rounded, size: 15),
-                label: const Text('∑ Formulas', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                label: const Text(
+                  '∑ Formulas',
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0F172A),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                   elevation: 0,
                 ),
               ),
@@ -4549,7 +5642,11 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 ),
                 child: Text(
                   '${rows.length} leads • ${cols.length} columns',
-                  style: const TextStyle(fontSize: 11.5, color: Color(0xFF475569), fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: Color(0xFF475569),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -4646,7 +5743,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 bottom: BorderSide(color: Color(0xFF94A3B8), width: 1.5),
               ),
             ),
-            child: const Text('#', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFF475569))),
+            child: const Text(
+              '#',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+                color: Color(0xFF475569),
+              ),
+            ),
           ),
 
           // Each Column Header Box
@@ -4693,14 +5797,21 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   ),
                   const SizedBox(width: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 1.5,
+                    ),
                     decoration: BoxDecoration(
                       color: tagColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(3),
                     ),
                     child: Text(
                       col.userType.toUpperCase(),
-                      style: TextStyle(fontSize: 8, fontWeight: FontWeight.w800, color: tagColor),
+                      style: TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.w800,
+                        color: tagColor,
+                      ),
                     ),
                   ),
                 ],
@@ -4718,7 +5829,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 bottom: BorderSide(color: Color(0xFF94A3B8), width: 1.5),
               ),
             ),
-            child: const Text('Actions', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFF475569))),
+            child: const Text(
+              'Actions',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+                color: Color(0xFF475569),
+              ),
+            ),
           ),
         ],
       ),
@@ -4735,7 +5853,8 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
     final ApiRow? rowData = hasData ? rows[displayIndex] : null;
 
     // Check if this row is the active inline add row (placed immediately after the existing data rows)
-    final bool isInlineAddRow = _isAddingInlineRow && (displayIndex == rows.length);
+    final bool isInlineAddRow =
+        _isAddingInlineRow && (displayIndex == rows.length);
     final bool isEditing = hasData && (_editingRowId == rowData!.id);
 
     final rowNumber = displayIndex + 1;
@@ -4751,7 +5870,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
             height: 36,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: isInlineAddRow ? const Color(0xFFF0FDF4) : const Color(0xFFF8FAFC),
+              color: isInlineAddRow
+                  ? const Color(0xFFF0FDF4)
+                  : const Color(0xFFF8FAFC),
               border: const Border(
                 right: BorderSide(color: Color(0xFFCBD5E1), width: 1),
                 bottom: BorderSide(color: Color(0xFFCBD5E1), width: 1),
@@ -4759,19 +5880,31 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
             ),
             child: isInlineAddRow
                 ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF16A34A),
                       borderRadius: BorderRadius.circular(3),
                     ),
-                    child: const Text('NEW', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w800)),
+                    child: const Text(
+                      'NEW',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   )
                 : Text(
                     '$rowNumber',
                     style: TextStyle(
                       fontWeight: isEditing ? FontWeight.w800 : FontWeight.w600,
                       fontSize: 11.5,
-                      color: isEditing ? AppColors.primary : const Color(0xFF64748B),
+                      color: isEditing
+                          ? AppColors.primary
+                          : const Color(0xFF64748B),
                     ),
                   ),
           ),
@@ -4783,10 +5916,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
             final width = _getColumnWidth(col);
             final colLower = col.columnName.trim().toLowerCase();
             final keyLower = col.columnKey.trim().toLowerCase();
-            final isStatusCol = colLower == 'status' || colLower.contains('status') || keyLower.contains('status');
+            final isStatusCol =
+                colLower == 'status' ||
+                colLower.contains('status') ||
+                keyLower.contains('status');
             final isDropdown = _isDropdownColumn(col);
             final isAdvance = _isAdvanceColumn(col);
-            final isNumber = col.columnType == 'number' ||
+            final isNumber =
+                col.columnType == 'number' ||
                 colLower.contains('amount') ||
                 colLower.contains('charge') ||
                 colLower.contains('profit') ||
@@ -4804,11 +5941,15 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
             // Case A: Row is being edited
             if (isEditing) {
-              final ctrl = _editRowControllers[col.columnKey] ?? _editRowControllers[col.columnName];
+              final ctrl =
+                  _editRowControllers[col.columnKey] ??
+                  _editRowControllers[col.columnName];
               if (isDropdown) {
                 final currentVal = (ctrl?.text.isNotEmpty == true)
                     ? ctrl!.text
-                    : (isStatusCol ? (rowData.status.isNotEmpty ? rowData.status : 'New') : rowData.getValue(col));
+                    : (isStatusCol
+                          ? (rowData.status.isNotEmpty ? rowData.status : 'New')
+                          : rowData.getValue(col));
                 return _buildDropdownCell(
                   width: width,
                   col: col,
@@ -4818,11 +5959,22 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   onSelected: (selectedVal) {
                     setState(() {
                       if (ctrl != null) ctrl.text = selectedVal;
-                      if (_editRowControllers.containsKey(col.columnKey)) _editRowControllers[col.columnKey]!.text = selectedVal;
-                      if (_editRowControllers.containsKey(col.columnName)) _editRowControllers[col.columnName]!.text = selectedVal;
-                      if (isStatusCol) _editRowStatus = selectedVal.toLowerCase().replaceAll(' ', '_');
+                      if (_editRowControllers.containsKey(col.columnKey))
+                        _editRowControllers[col.columnKey]!.text = selectedVal;
+                      if (_editRowControllers.containsKey(col.columnName))
+                        _editRowControllers[col.columnName]!.text = selectedVal;
+                      if (isStatusCol)
+                        _editRowStatus = selectedVal.toLowerCase().replaceAll(
+                          ' ',
+                          '_',
+                        );
                     });
-                    _commitAutoSave(rowData, col, selectedVal, showToast: false);
+                    _commitAutoSave(
+                      rowData,
+                      col,
+                      selectedVal,
+                      showToast: false,
+                    );
                   },
                 );
               }
@@ -4839,11 +5991,21 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 ),
                 child: TextField(
                   controller: ctrl,
-                  focusNode: _editRowFocusNodes[col.columnKey] ?? _editRowFocusNodes[col.columnName],
-                  keyboardType: (isNumber || isAdvance) ? TextInputType.number : TextInputType.text,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF0F172A), fontWeight: FontWeight.w400),
+                  focusNode:
+                      _editRowFocusNodes[col.columnKey] ??
+                      _editRowFocusNodes[col.columnName],
+                  keyboardType: (isNumber || isAdvance)
+                      ? TextInputType.number
+                      : TextInputType.text,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF0F172A),
+                    fontWeight: FontWeight.w400,
+                  ),
                   cursorColor: const Color(0xFF1A73E8),
-                  textInputAction: isLastEditable ? TextInputAction.done : TextInputAction.next,
+                  textInputAction: isLastEditable
+                      ? TextInputAction.done
+                      : TextInputAction.next,
                   onChanged: (newVal) {
                     _triggerAutoSave(rowData, col, newVal);
                   },
@@ -4858,12 +6020,18 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   },
                   decoration: InputDecoration(
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 9,
+                    ),
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
                     hintText: isAdvance ? 'Enter or choose advance' : '',
-                    hintStyle: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                    hintStyle: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF94A3B8),
+                    ),
                     suffixIcon: isAdvance
                         ? InkWell(
                             onTap: () {
@@ -4872,20 +6040,41 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                                 onConfirmed: (newVal) {
                                   setState(() {
                                     if (ctrl != null) ctrl.text = newVal;
-                                    if (_editRowControllers.containsKey(col.columnKey)) _editRowControllers[col.columnKey]!.text = newVal;
-                                    if (_editRowControllers.containsKey(col.columnName)) _editRowControllers[col.columnName]!.text = newVal;
+                                    if (_editRowControllers.containsKey(
+                                      col.columnKey,
+                                    ))
+                                      _editRowControllers[col.columnKey]!.text =
+                                          newVal;
+                                    if (_editRowControllers.containsKey(
+                                      col.columnName,
+                                    ))
+                                      _editRowControllers[col.columnName]!
+                                              .text =
+                                          newVal;
                                   });
-                                  _commitAutoSave(rowData, col, newVal, showToast: false);
+                                  _commitAutoSave(
+                                    rowData,
+                                    col,
+                                    newVal,
+                                    showToast: false,
+                                  );
                                 },
                               );
                             },
                             child: const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 4),
-                              child: Icon(Icons.arrow_drop_down_circle_outlined, size: 16, color: Color(0xFF64748B)),
+                              child: Icon(
+                                Icons.arrow_drop_down_circle_outlined,
+                                size: 16,
+                                color: Color(0xFF64748B),
+                              ),
                             ),
                           )
                         : null,
-                    suffixIconConstraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                    suffixIconConstraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
                   ),
                 ),
               );
@@ -4893,11 +6082,17 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
             // Case B: Row is the active inline add row
             if (isInlineAddRow) {
-              final ctrl = _newRowControllers[col.columnKey] ?? _newRowControllers[col.columnName];
+              final ctrl =
+                  _newRowControllers[col.columnKey] ??
+                  _newRowControllers[col.columnName];
               if (isDropdown) {
                 final currentVal = (ctrl?.text.isNotEmpty == true)
                     ? ctrl!.text
-                    : (isStatusCol ? 'New' : (_getDropdownOptions(col).isNotEmpty ? _getDropdownOptions(col).first : ''));
+                    : (isStatusCol
+                          ? 'New'
+                          : (_getDropdownOptions(col).isNotEmpty
+                                ? _getDropdownOptions(col).first
+                                : ''));
                 return _buildDropdownCell(
                   width: width,
                   col: col,
@@ -4907,9 +6102,15 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   onSelected: (selectedVal) {
                     setState(() {
                       if (ctrl != null) ctrl.text = selectedVal;
-                      if (_newRowControllers.containsKey(col.columnKey)) _newRowControllers[col.columnKey]!.text = selectedVal;
-                      if (_newRowControllers.containsKey(col.columnName)) _newRowControllers[col.columnName]!.text = selectedVal;
-                      if (isStatusCol) _newRowStatus = selectedVal.toLowerCase().replaceAll(' ', '_');
+                      if (_newRowControllers.containsKey(col.columnKey))
+                        _newRowControllers[col.columnKey]!.text = selectedVal;
+                      if (_newRowControllers.containsKey(col.columnName))
+                        _newRowControllers[col.columnName]!.text = selectedVal;
+                      if (isStatusCol)
+                        _newRowStatus = selectedVal.toLowerCase().replaceAll(
+                          ' ',
+                          '_',
+                        );
                     });
                     _triggerAutoSaveNewLead();
                   },
@@ -4928,11 +6129,21 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                 ),
                 child: TextField(
                   controller: ctrl,
-                  focusNode: _newRowFocusNodes[col.columnKey] ?? _newRowFocusNodes[col.columnName],
-                  keyboardType: (isNumber || isAdvance) ? TextInputType.number : TextInputType.text,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF0F172A), fontWeight: FontWeight.w400),
+                  focusNode:
+                      _newRowFocusNodes[col.columnKey] ??
+                      _newRowFocusNodes[col.columnName],
+                  keyboardType: (isNumber || isAdvance)
+                      ? TextInputType.number
+                      : TextInputType.text,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF0F172A),
+                    fontWeight: FontWeight.w400,
+                  ),
                   cursorColor: const Color(0xFF1A73E8),
-                  textInputAction: isLastEditable ? TextInputAction.done : TextInputAction.next,
+                  textInputAction: isLastEditable
+                      ? TextInputAction.done
+                      : TextInputAction.next,
                   onChanged: (val) {
                     _triggerAutoSaveNewLead();
                   },
@@ -4946,12 +6157,20 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                   },
                   decoration: InputDecoration(
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 9,
+                    ),
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
-                    hintText: isStatusCol ? 'new' : (isAdvance ? 'Enter or choose' : ''),
-                    hintStyle: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                    hintText: isStatusCol
+                        ? 'new'
+                        : (isAdvance ? 'Enter or choose' : ''),
+                    hintStyle: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF94A3B8),
+                    ),
                     suffixIcon: isAdvance
                         ? InkWell(
                             onTap: () {
@@ -4960,8 +6179,16 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                                 onConfirmed: (newVal) {
                                   setState(() {
                                     if (ctrl != null) ctrl.text = newVal;
-                                    if (_newRowControllers.containsKey(col.columnKey)) _newRowControllers[col.columnKey]!.text = newVal;
-                                    if (_newRowControllers.containsKey(col.columnName)) _newRowControllers[col.columnName]!.text = newVal;
+                                    if (_newRowControllers.containsKey(
+                                      col.columnKey,
+                                    ))
+                                      _newRowControllers[col.columnKey]!.text =
+                                          newVal;
+                                    if (_newRowControllers.containsKey(
+                                      col.columnName,
+                                    ))
+                                      _newRowControllers[col.columnName]!.text =
+                                          newVal;
                                   });
                                   _triggerAutoSaveNewLead();
                                 },
@@ -4969,11 +6196,18 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                             },
                             child: const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 4),
-                              child: Icon(Icons.arrow_drop_down_circle_outlined, size: 16, color: Color(0xFF64748B)),
+                              child: Icon(
+                                Icons.arrow_drop_down_circle_outlined,
+                                size: 16,
+                                color: Color(0xFF64748B),
+                              ),
                             ),
                           )
                         : null,
-                    suffixIconConstraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                    suffixIconConstraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
                   ),
                 ),
               );
@@ -4983,7 +6217,9 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
             if (hasData) {
               if (isDropdown) {
                 final currentVal = isStatusCol
-                    ? (rowData!.status.isNotEmpty ? rowData.status : rowData.getValue(col))
+                    ? (rowData!.status.isNotEmpty
+                          ? rowData.status
+                          : rowData.getValue(col))
                     : rowData!.getValue(col);
                 return _buildDropdownCell(
                   width: width,
@@ -4999,7 +6235,10 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
 
               if (isAdvance) {
                 final val = rowData!.getValue(col).trim();
-                final isNotCollected = val.toLowerCase().contains('not') || val == '0' || val.isEmpty;
+                final isNotCollected =
+                    val.toLowerCase().contains('not') ||
+                    val == '0' ||
+                    val.isEmpty;
                 return Container(
                   width: width,
                   height: 36,
@@ -5023,11 +6262,16 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                               children: [
                                 if (!isNotCollected && val.isNotEmpty) ...[
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFDCFCE7),
                                       borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                                      border: Border.all(
+                                        color: const Color(0xFFBBF7D0),
+                                      ),
                                     ),
                                     child: Text(
                                       val.startsWith('₹') ? val : '₹$val',
@@ -5043,8 +6287,12 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                                     val.isEmpty ? '—' : val,
                                     style: TextStyle(
                                       fontSize: 11.5,
-                                      color: val.toLowerCase().contains('not') ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                                      fontStyle: isNotCollected ? FontStyle.italic : FontStyle.normal,
+                                      color: val.toLowerCase().contains('not')
+                                          ? const Color(0xFF94A3B8)
+                                          : const Color(0xFF64748B),
+                                      fontStyle: isNotCollected
+                                          ? FontStyle.italic
+                                          : FontStyle.normal,
                                     ),
                                   ),
                                 ],
@@ -5063,8 +6311,15 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                           );
                         },
                         child: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                          child: Icon(Icons.arrow_drop_down_circle_outlined, size: 16, color: Color(0xFF94A3B8)),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 6,
+                          ),
+                          child: Icon(
+                            Icons.arrow_drop_down_circle_outlined,
+                            size: 16,
+                            color: Color(0xFF94A3B8),
+                          ),
                         ),
                       ),
                     ],
@@ -5096,8 +6351,12 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                     val.isNotEmpty ? val : '',
                     style: TextStyle(
                       fontSize: 12,
-                      color: val.isNotEmpty ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
-                      fontWeight: (colLower == 'name' || colLower == 'number') ? FontWeight.w600 : FontWeight.w400,
+                      color: val.isNotEmpty
+                          ? const Color(0xFF0F172A)
+                          : const Color(0xFF94A3B8),
+                      fontWeight: (colLower == 'name' || colLower == 'number')
+                          ? FontWeight.w600
+                          : FontWeight.w400,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -5137,9 +6396,14 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
             ),
             child: (isEditing || isInlineAddRow)
                 ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
-                      color: isInlineAddRow ? const Color(0xFFDCFCE7) : const Color(0xFFDBEAFE),
+                      color: isInlineAddRow
+                          ? const Color(0xFFDCFCE7)
+                          : const Color(0xFFDBEAFE),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -5147,34 +6411,56 @@ class _SpreadsheetScreenState extends State<SpreadsheetScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: isInlineAddRow ? const Color(0xFF15803D) : const Color(0xFF1D4ED8),
+                        color: isInlineAddRow
+                            ? const Color(0xFF15803D)
+                            : const Color(0xFF1D4ED8),
                       ),
                     ),
                   )
                 : (hasData
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (_isManager) ...[
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (_isManager) ...[
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.history_rounded,
+                                  size: 15,
+                                  color: Color(0xFF64748B),
+                                ),
+                                onPressed: () => _showEditHistoryDialog(
+                                  rowId: rowData!.id,
+                                  leadName: rowData.leadName,
+                                ),
+                                tooltip: 'History',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 26,
+                                  minHeight: 26,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                            ],
                             IconButton(
-                              icon: const Icon(Icons.history_rounded, size: 15, color: Color(0xFF64748B)),
-                              onPressed: () => _showEditHistoryDialog(rowId: rowData!.id, leadName: rowData.leadName),
-                              tooltip: 'History',
+                              icon: const Icon(
+                                Icons.open_in_new_rounded,
+                                size: 15,
+                                color: Color(0xFF64748B),
+                              ),
+                              onPressed: () => _openLeadDetailsPage(
+                                rowData!,
+                                editMode: false,
+                              ),
+                              tooltip: 'Details',
                               padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                              constraints: const BoxConstraints(
+                                minWidth: 26,
+                                minHeight: 26,
+                              ),
                             ),
-                            const SizedBox(width: 4),
                           ],
-                          IconButton(
-                            icon: const Icon(Icons.open_in_new_rounded, size: 15, color: Color(0xFF64748B)),
-                            onPressed: () => _openLeadDetailsPage(rowData!, editMode: false),
-                            tooltip: 'Details',
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                          ),
-                        ],
-                      )
-                    : const SizedBox()),
+                        )
+                      : const SizedBox()),
           ),
         ],
       ),
